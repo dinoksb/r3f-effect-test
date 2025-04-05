@@ -9,10 +9,14 @@ import { LightningEffectController } from './LightningEffectController';
 import * as THREE from 'three';
 import { ControllerHandle, FreeViewController } from 'vibe-starter-3d';
 import { MeteorEffectController } from './MeteorEffectController';
+import { FireBallEffectController } from './FireBallEffectController';
+import { RandomBoxes } from './RandomBoxes';
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
   key: number;
+  direction: THREE.Vector3;
+  startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
 }
 
@@ -52,10 +56,10 @@ export function Experience() {
   }, [playerRef.current?.boundingBox, playerRef.current?.size]);
 
   // Callback for Player to request a magic cast
-  const handleCastMagic = useCallback((targetPosition: THREE.Vector3) => {
+  const handleCastMagic = useCallback((direction: THREE.Vector3, startPosition: THREE.Vector3, targetPosition: THREE.Vector3) => {
     console.log('Experience received cast request at:', targetPosition);
     const newKey = effectKeyCounter.current++;
-    setActiveEffects((prev) => [...prev, { key: newKey, targetPosition: targetPosition }]);
+    setActiveEffects((prev) => [...prev, { key: newKey, direction: direction, startPosition: startPosition, targetPosition: targetPosition }]);
   }, []); // No dependencies needed as it only uses refs and setters
 
   // Callback to remove completed effects
@@ -104,13 +108,16 @@ export function Experience() {
           </FreeViewController>
         </KeyboardControls>
 
+        {/* RandomBoxes */}
+        <RandomBoxes count={20} range={10} />
+
         {/* Floor */}
         <Floor />
-
         {/* Render active lightning effects at the scene level */}
         {activeEffects.map((effect) => (
           // <LightningEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
-          <MeteorEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          // <MeteorEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          <FireBallEffectController key={effect.key} startPosition={effect.startPosition} direction={effect.direction} onComplete={() => handleMagicEffectComplete(effect.key)} />
         ))}
       </Physics>
     </>

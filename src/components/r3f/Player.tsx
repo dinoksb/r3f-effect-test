@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, forwardRef, useImperativeHandle} from 'react';
+import React, { useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
 import * as THREE from 'three';
 import { useKeyboardControls } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
@@ -43,7 +43,7 @@ interface PlayerProps {
   /** Target height for the character model */
   targetHeight?: number;
   /** Callback to request magic cast */
-  onCastMagic?: (targetPosition: THREE.Vector3) => void;
+  onCastMagic?: (direction: THREE.Vector3, startPosition: THREE.Vector3, targetPosition: THREE.Vector3) => void;
 }
 
 /**
@@ -208,7 +208,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       }),
       [],
     );
-
+    
     useFrame(() => {
       if (!controllerRef?.current?.rigidBodyRef?.current) return;
 
@@ -219,9 +219,14 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
 
       if (triggerMagic) {
         console.log('Magic key pressed - Requesting cast!');
-        const targetPosition = new THREE.Vector3(0, 0, 0);
-
+        const rigidBody = controllerRef.current.rigidBodyRef.current;
+        const position = rigidBody.translation();
+        const startPosition = new THREE.Vector3(position.x, position.y, position.z);
+        
+      
+        
         // Calculate target near player (re-enabled)
+        const targetPosition = new THREE.Vector3(0, 0, 0);
         const currentPosition = controllerRef.current.rigidBodyRef.current.translation();
         currentPosition.y = 0;
         const radius = 5;
@@ -229,9 +234,14 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
         const randomRadius = Math.random() * radius;
         targetPosition.set(currentPosition.x + Math.cos(randomAngle) * randomRadius, 0, currentPosition.z + Math.sin(randomAngle) * randomRadius);
 
+          // Forward direction = apply quaternion to (0, 0, -1)
+        const rotation = rigidBody.rotation(); // Quaternion
+        const quaternion = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+        const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion).normalize();
+
         // Call the callback provided by the parent
         if (onCastMagic) {
-          onCastMagic(targetPosition);
+          onCastMagic(direction, startPosition, targetPosition);
         } else {
           console.warn('Player tried to cast magic, but onCastMagic prop is missing!');
         }
