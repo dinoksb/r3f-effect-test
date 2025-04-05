@@ -1,0 +1,177 @@
+import React, { useRef, useMemo, useState, useEffect } from 'react';
+import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
+import { Sphere, Trail } from '@react-three/drei';
+
+interface MeteorProps {
+  startPosition: THREE.Vector3;
+  targetPosition: THREE.Vector3;
+  duration: number;
+  onComplete?: () => void;
+}
+
+// Component for the impact effect when the fireball hits the target
+interface ImpactEffectProps {
+  position: THREE.Vector3;
+}
+
+const ImpactEffect: React.FC<ImpactEffectProps> = ({ position }) => {
+  const sphereRef = useRef<THREE.Mesh>();
+  const lightRef = useRef<THREE.PointLight>();
+  const startTime = useRef(Date.now());
+  const duration = 600; // milliseconds
+  const maxRadius = 5;
+
+  useFrame(() => {
+    const elapsedTime = Date.now() - startTime.current;
+    const progress = Math.min(elapsedTime / duration, 1);
+
+    if (sphereRef.current) {
+      // Expand and fade out
+      const scale = progress * maxRadius;
+      sphereRef.current.scale.set(scale, scale, scale);
+      
+      const opacity = Math.pow(1 - progress, 2);
+      (sphereRef.current.material as THREE.MeshBasicMaterial).opacity = opacity;
+      (sphereRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
+    }
+
+    if (lightRef.current) {
+      // Fade out light
+      lightRef.current.intensity = 10 * (1 - progress);
+    }
+  });
+
+  return (
+    <>
+      <Sphere ref={sphereRef} args={[1, 16, 16]} position={position}>
+        <meshBasicMaterial
+          color="#ff4400"
+          transparent
+          opacity={1}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </Sphere>
+      <pointLight ref={lightRef} position={position} color="#ff4400" intensity={10} distance={15} decay={2} />
+    </>
+  );
+};
+
+export const Meteor: React.FC<MeteorProps> = ({
+    startPosition,
+    targetPosition,
+    duration,
+    onComplete,
+  }) => {
+    const meteorRef = useRef<THREE.Mesh>(null);
+    const emberRef = useRef<THREE.Mesh>(null);
+    const lightRef = useRef<THREE.PointLight>(null);
+    const startTime = useRef(Date.now());
+  
+    const [showImpact, setShowImpact] = useState(false);
+    const [impactDone, setImpactDone] = useState(false);
+  
+    const direction = useMemo(() => {
+      return targetPosition.clone().sub(startPosition);
+    }, [startPosition, targetPosition]);
+  
+    useFrame(() => {
+      const elapsed = Date.now() - startTime.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const currentPosition = startPosition.clone().add(direction.clone().multiplyScalar(progress));
+  
+      // 이동 및 이펙트 업데이트
+      if (meteorRef.current) {
+        meteorRef.current.position.copy(currentPosition);
+        meteorRef.current.rotation.x += 0.01;
+        meteorRef.current.rotation.y += 0.02;
+        meteorRef.current.rotation.z += 0.015;
+        const scale = THREE.MathUtils.randFloat(0.9, 1.1);
+        meteorRef.current.scale.set(scale, scale, scale);
+      }
+  
+      if (emberRef.current) {
+        emberRef.current.position.copy(currentPosition);
+        emberRef.current.rotation.y += 0.05;
+        const emberScale = THREE.MathUtils.randFloat(0.6, 1.3);
+        emberRef.current.scale.set(emberScale, emberScale, emberScale);
+      }
+  
+      if (lightRef.current) {
+        lightRef.current.position.copy(currentPosition);
+        lightRef.current.intensity = THREE.MathUtils.randFloat(3, 5);
+      }
+  
+      // 충돌 처리: 도착 시점에서 ImpactEffect 시작
+      if (!showImpact && currentPosition.distanceTo(targetPosition) < 0.3) {
+        setShowImpact(true);
+      }
+    });
+  
+    // ImpactEffect 끝났을 때 onComplete 호출
+    useEffect(() => {
+      if (showImpact && !impactDone) {
+        const impactDuration = 600;
+        const timer = setTimeout(() => {
+          setImpactDone(true);
+          onComplete?.(); // 외부에 완료 알림
+        }, impactDuration);
+        return () => clearTimeout(timer);
+      }
+    }, [showImpact, impactDone, onComplete]);
+
+  return (
+    <>
+      {/* Main meteor using dodecahedron as requested */}
+      {!showImpact && (
+      <>
+        <mesh ref={meteorRef} position={startPosition.clone()}>
+          <dodecahedronGeometry args={[2, 0]} />
+          <meshBasicMaterial
+            color="#ff4400"
+            transparent
+            opacity={0.9}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <mesh ref={emberRef} position={startPosition.clone()}>
+          <dodecahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial
+            color="#ffff00"
+            transparent
+            opacity={0.8}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <pointLight
+          ref={lightRef}
+          position={startPosition.clone()}
+          color="#ff6600"
+          intensity={5}
+          distance={10}
+          decay={2}
+        />
+
+        <Trail
+          width={5}
+          length={2}
+          color={new THREE.Color('#ff6600')}
+          attenuation={(w) => w}
+          target={emberRef}
+        />
+      </>
+    )}
+      
+      {/* Impact effect */}
+      {showImpact && !impactDone && <ImpactEffect position={targetPosition} />}
+    </>
+  );
+}; 

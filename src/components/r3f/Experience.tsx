@@ -8,6 +8,7 @@ import { Floor } from './Floor';
 import { LightningEffectController } from './LightningEffectController';
 import * as THREE from 'three';
 import { ControllerHandle, FreeViewController } from 'vibe-starter-3d';
+import { MeteorEffectController } from './MeteorEffectController';
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -93,6 +94,7 @@ export function Experience() {
             ref={controllerRef}
             targetHeight={targetHeight}
             camInitDis={-10}
+            camMinDis={-10}
             followLight={{
               position: [20, 30, 10],
               intensity: 1.2,
@@ -107,7 +109,8 @@ export function Experience() {
 
         {/* Render active lightning effects at the scene level */}
         {activeEffects.map((effect) => (
-          <LightningEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          // <LightningEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          <MeteorEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
         ))}
       </Physics>
     </>
