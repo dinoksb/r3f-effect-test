@@ -1,8 +1,6 @@
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { Trail } from '@react-three/drei';
-// React Three Rapier
 import { RigidBody, BallCollider } from '@react-three/rapier';
 
 interface FireBallProps {
@@ -10,7 +8,7 @@ interface FireBallProps {
   direction: THREE.Vector3;  // 정규화된 방향 벡터
   speed: number;             // 1초당 이동 거리
   duration: number;          // 생존 시간 (밀리초)
-  onHit?: (other?: unknown) => void;  // 충돌 시 콜백
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;  // 충돌 시 콜백
   onComplete?: () => void;
 }
 
@@ -28,11 +26,6 @@ export const FireBall: React.FC<FireBallProps> = ({
   const [trailKey, setTrailKey] = useState(0);
   // FireBall의 "생성 시점"
   const startTime = useRef(Date.now());
-
-  // 시작 위치를 direction 방향으로 1만큼 오프셋
-  const initialPosition = useMemo(() => {
-    return startPosition.clone().add(direction.clone().multiplyScalar(1));
-  }, [startPosition, direction]);
 
   // RigidBody 참조 (Rapier 객체)
   const rigidRef = useRef(null);
@@ -59,12 +52,12 @@ export const FireBall: React.FC<FireBallProps> = ({
     const elapsed = Date.now() - startTime.current;
     const seconds = elapsed / 1000;
 
-    // 새 위치 = 초기 위치 + 방향 * 속도 * 경과시간
-    const currentPos = initialPosition.clone().add(
+    // // 새 위치 = 초기 위치 + 방향 * 속도 * 경과시간
+    const currentPos = startPosition.clone().add(
       direction.clone().multiplyScalar(speed * seconds)
     );
 
-    // Rapier Kinematic Body 이동 업데이트
+    // // Rapier Kinematic Body 이동 업데이트
     // setNextKinematicTranslation( { x, y, z } ) 형태로 전달
     rigidRef.current?.setNextKinematicTranslation({
       x: currentPos.x,
@@ -124,11 +117,15 @@ export const FireBall: React.FC<FireBallProps> = ({
       // 충돌(교차) 이벤트
       onIntersectionEnter={(other) => {
         // FireBall이 다른 RigidBody와 교차하면 호출
-        onHit?.(other);
+        const translation = rigidRef.current?.translation();
+        const hitPosition = translation
+        ? new THREE.Vector3(translation.x, translation.y, translation.z)
+        : undefined;
+        onHit?.(other, hitPosition);
         setDestroyed(true);
       }}
       // 초기 위치 설정
-      position={[initialPosition.x, initialPosition.y, initialPosition.z]}
+      position={[startPosition.x, startPosition.y, startPosition.z]}
       // 중력등 영향 안 받도록
       gravityScale={0}
     >

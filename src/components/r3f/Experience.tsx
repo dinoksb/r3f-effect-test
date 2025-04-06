@@ -117,6 +117,7 @@ export function Experience() {
         {activeEffects.map((effect) => (
           // <LightningEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
           // <MeteorEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          
           <FireBallEffectController key={effect.key} startPosition={effect.startPosition} direction={effect.direction} onComplete={() => handleMagicEffectComplete(effect.key)} />
         ))}
       </Physics>

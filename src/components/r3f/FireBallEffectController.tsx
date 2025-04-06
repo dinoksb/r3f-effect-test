@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { FireBall } from './FireBall';
+import { Explosion } from './Explosion';
 
 interface FireBallEffectControllerProps {
   startPosition: THREE.Vector3;
@@ -18,6 +19,31 @@ export const FireBallEffectController: React.FC<FireBallEffectControllerProps> =
   onComplete,
 }) => {
   const [spawned, setSpawned] = useState(false);
+  const [explosions, setExplosions] = useState<
+    { key: number; pos: [number, number, number] }[]
+  >([])
+  const explosionKeyCounter = useRef(0);
+
+  // only for debug
+  const caclcStartPosition = startPosition.clone().add(direction.clone().multiplyScalar(1));
+
+  
+
+  const handleExplosionFinish = useCallback((key: number) => {
+    setExplosions((prev) => prev.filter((ex) => ex.key !== key))
+    onComplete?.();
+  }, [onComplete])
+
+  const handleFireBallHit = (other: unknown, pos: THREE.Vector3) => {
+    explosionKeyCounter.current++;
+    setExplosions((prev) => [
+      ...prev,
+      {
+        key: explosionKeyCounter.current,
+        pos: [pos.x, pos.y, pos.z],
+      },
+    ])
+  }
 
   useEffect(() => {
     setSpawned(true);
@@ -26,12 +52,24 @@ export const FireBallEffectController: React.FC<FireBallEffectControllerProps> =
   if (!spawned) return null;
 
   return (
-    <FireBall
-      startPosition={startPosition}
-      direction={direction}
-      speed={speed}
-      duration={duration}
-      onComplete={onComplete}
-    />
+    <>
+      <FireBall
+        startPosition={caclcStartPosition}
+        direction={direction}
+        speed={speed}
+        duration={duration}
+        onHit={handleFireBallHit}
+        onComplete={onComplete}
+      />
+  
+      {explosions.map((ex) => (
+        <Explosion
+          key={ex.key}
+          position={ex.pos}
+          scale={0.5}
+          onFinish={() => handleExplosionFinish(ex.key)}
+        />
+      ))}
+    </>
   );
 };
