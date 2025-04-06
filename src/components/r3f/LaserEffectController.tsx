@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as THREE from 'three';
 import { Laser } from './Laser';
-import { Explosion } from './Explosion';
 
 interface LaserEffectControllerProps {
   startPosition: THREE.Vector3;
@@ -13,29 +12,27 @@ interface LaserEffectControllerProps {
   // 동적 위치와 방향을 가져오는 콜백 함수들
   getLatestPosition?: () => THREE.Vector3;
   getLatestDirection?: () => THREE.Vector3;
+  hitInterval?: number;          // 히트 판정 간격 (밀리초)
+  showDebugBox?: boolean;        // 충돌 박스 시각화 여부
 }
 
 export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
   startPosition,
   direction,
-  duration = 1500,               // 레이저 지속 시간
+  duration = 2000,               // 레이저 지속 시간
   length = 15,                   // 레이저 빔 길이
   thickness = 0.3,               // 레이저 빔 두께
   onComplete,
   getLatestPosition,
   getLatestDirection,
+  hitInterval = 1000,
 }) => {
   const [spawned, setSpawned] = useState(false);
-  const [explosions, setExplosions] = useState<
-    { key: number; pos: [number, number, number] }[]
-  >([]);
   
-  // 현재 레이저 위치와 방향을 저장하는 ref (매 프레임 업데이트)
-  const currentPositionRef = useRef(startPosition.clone());
-  const currentDirectionRef = useRef(direction.clone().normalize());
+  // 현재 레이저 위치와 방향을 추적하는 state 추가
+  const [currentPosition, setCurrentPosition] = useState(startPosition.clone());
+  const [currentDirection, setCurrentDirection] = useState(direction.clone().normalize());
   
-  const explosionKeyCounter = useRef(0);
-
   // useFrame 대신 사용할 애니메이션 루프 업데이트
   useEffect(() => {
     let frameId: number;
@@ -47,11 +44,13 @@ export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
 
       // 동적 업데이트: 외부에서 제공한 콜백을 통해 최신 위치와 방향 가져오기
       if (getLatestPosition) {
-        currentPositionRef.current.copy(getLatestPosition());
+        const newPosition = getLatestPosition();
+        setCurrentPosition(newPosition);
       }
       
       if (getLatestDirection) {
-        currentDirectionRef.current.copy(getLatestDirection()).normalize();
+        const newDirection = getLatestDirection();
+        setCurrentDirection(newDirection);
       }
 
       // 지속 시간이 지나면 종료
@@ -72,20 +71,9 @@ export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
     };
   }, [duration, getLatestPosition, getLatestDirection, onComplete]);
 
-  const handleExplosionFinish = useCallback((key: number) => {
-    setExplosions((prev) => prev.filter((ex) => ex.key !== key));
-    // 폭발 효과가 끝나도 레이저 자체 수명은 duration에 따름
-  }, []);
 
   const handleLaserHit = (other: unknown, pos: THREE.Vector3) => {
-    explosionKeyCounter.current++;
-    setExplosions((prev) => [
-      ...prev,
-      {
-        key: explosionKeyCounter.current,
-        pos: [pos.x, pos.y, pos.z],
-      },
-    ]);
+    console.log('hit', other, pos);
   };
 
   useEffect(() => {
@@ -97,23 +85,15 @@ export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
   return (
     <>
       <Laser
-        startPosition={currentPositionRef.current}
-        direction={currentDirectionRef.current}
+        startPosition={currentPosition}
+        direction={currentDirection}
         duration={duration}
         length={length}
         thickness={thickness}
+        hitInterval={hitInterval}
         onHit={handleLaserHit}
         onComplete={onComplete}
       />
-  
-      {explosions.map((ex) => (
-        <Explosion
-          key={ex.key}
-          position={ex.pos}
-          scale={0.4}                 // 레이저 폭발은 약간 작게
-          onFinish={() => handleExplosionFinish(ex.key)}
-        />
-      ))}
     </>
   );
 }; 

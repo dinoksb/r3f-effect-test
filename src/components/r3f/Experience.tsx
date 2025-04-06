@@ -9,7 +9,6 @@ import { RandomBoxes } from './RandomBoxes';
 import * as THREE from 'three';
 import { ControllerHandle, FreeViewController } from 'vibe-starter-3d';
 import { LaserEffectController } from './LaserEffectController';
-import { FireBallEffectController } from './FireBallEffectController';
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -141,12 +140,6 @@ export function Experience() {
         <Floor />
         {/* Render active lightning effects at the scene level */}
         {activeEffects.map((effect) => (
-        // <FireBallEffectController 
-        //   key={effect.key} 
-        //   startPosition={effect.startPosition} 
-        //   direction={effect.direction}
-        //   onComplete={() => handleMagicEffectComplete(effect.key)} 
-        //   />
           <LaserEffectController 
             key={effect.key} 
             startPosition={effect.startPosition} 
