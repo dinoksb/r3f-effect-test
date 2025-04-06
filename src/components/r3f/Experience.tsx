@@ -5,12 +5,13 @@ import { CharacterState } from '../../constants/character';
 import { keyboardMap } from '../../constants/controls';
 import { Player, PlayerRef } from './Player';
 import { Floor } from './Floor';
-import { LightningEffectController } from './LightningEffectController';
+import { RandomBoxes } from './RandomBoxes';
 import * as THREE from 'three';
 import { ControllerHandle, FreeViewController } from 'vibe-starter-3d';
+import { LightningEffectController } from './LightningEffectController';
 import { MeteorEffectController } from './MeteorEffectController';
 import { FireBallEffectController } from './FireBallEffectController';
-import { RandomBoxes } from './RandomBoxes';
+import { PoisonSwampEffectController } from './PoisonSwampEffectController';
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -118,7 +119,8 @@ export function Experience() {
           // <LightningEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
           // <MeteorEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
           
-          <FireBallEffectController key={effect.key} startPosition={effect.startPosition} direction={effect.direction} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          // <FireBallEffectController key={effect.key} startPosition={effect.startPosition} direction={effect.direction} onComplete={() => handleMagicEffectComplete(effect.key)} />
+          <PoisonSwampEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
         ))}
       </Physics>
     </>

@@ -15,7 +15,7 @@ export const LightningEffectController: React.FC<LightningEffectControllerProps>
   const [isCalculating, setIsCalculating] = useState(true);
   const { world } = useRapier();
   const effectDuration = 700;
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
     console.log('LightningEffectController mounted, calculating targets for:', targetPosition);

@@ -15,7 +15,7 @@ export const FireBallEffectController: React.FC<FireBallEffectControllerProps> =
   startPosition,
   direction,
   speed = 10,
-  duration = 1000,
+  duration = 2000,
   onComplete,
 }) => {
   const [spawned, setSpawned] = useState(false);
