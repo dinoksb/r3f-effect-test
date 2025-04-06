@@ -8,10 +8,8 @@ import { Floor } from './Floor';
 import { RandomBoxes } from './RandomBoxes';
 import * as THREE from 'three';
 import { ControllerHandle, FreeViewController } from 'vibe-starter-3d';
-import { LightningEffectController } from './LightningEffectController';
-import { MeteorEffectController } from './MeteorEffectController';
+import { LaserEffectController } from './LaserEffectController';
 import { FireBallEffectController } from './FireBallEffectController';
-import { PoisonSwampEffectController } from './PoisonSwampEffectController';
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -19,6 +17,7 @@ interface ActiveEffect {
   direction: THREE.Vector3;
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
+  sourceRef?: React.RefObject<PlayerRef>; // 레이저 소스 참조 (플레이어)
 }
 
 export function Experience() {
@@ -60,13 +59,39 @@ export function Experience() {
   const handleCastMagic = useCallback((direction: THREE.Vector3, startPosition: THREE.Vector3, targetPosition: THREE.Vector3) => {
     console.log('Experience received cast request at:', targetPosition);
     const newKey = effectKeyCounter.current++;
-    setActiveEffects((prev) => [...prev, { key: newKey, direction: direction, startPosition: startPosition, targetPosition: targetPosition }]);
+    
+    // sourceRef에 playerRef 추가하여 위치와 방향을 동적으로 얻을 수 있도록 함
+    setActiveEffects((prev) => [...prev, { 
+      key: newKey, 
+      direction: direction, 
+      startPosition: startPosition, 
+      targetPosition: targetPosition,
+      sourceRef: playerRef // 플레이어 참조 전달
+    }]);
   }, []); // No dependencies needed as it only uses refs and setters
 
   // Callback to remove completed effects
   const handleMagicEffectComplete = useCallback((keyToRemove: number) => {
     console.log(`Experience removing effect ${keyToRemove}`);
     setActiveEffects((prevEffects) => prevEffects.filter((effect) => effect.key !== keyToRemove));
+  }, []);
+
+  // 플레이어의 최신 포지션을 가져오는 함수
+  const getPlayerPosition = useCallback(() => {
+    if (!playerRef.current || !controllerRef.current?.rigidBodyRef?.current) return new THREE.Vector3();
+    
+    const position = controllerRef.current.rigidBodyRef.current.translation();
+    return new THREE.Vector3(position.x, position.y, position.z);
+  }, []);
+
+  // 플레이어의 최신 방향을 가져오는 함수
+  const getPlayerDirection = useCallback(() => {
+    if (!playerRef.current || !controllerRef.current?.rigidBodyRef?.current) return new THREE.Vector3(0, 0, 1);
+    
+    const rigidBody = controllerRef.current.rigidBodyRef.current;
+    const rotation = rigidBody.rotation(); // Quaternion
+    const quaternion = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
+    return new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion).normalize();
   }, []);
 
   return (
@@ -116,11 +141,20 @@ export function Experience() {
         <Floor />
         {/* Render active lightning effects at the scene level */}
         {activeEffects.map((effect) => (
-          // <LightningEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
-          // <MeteorEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
-          
-          // <FireBallEffectController key={effect.key} startPosition={effect.startPosition} direction={effect.direction} onComplete={() => handleMagicEffectComplete(effect.key)} />
-          <PoisonSwampEffectController key={effect.key} targetPosition={effect.targetPosition} onComplete={() => handleMagicEffectComplete(effect.key)} />
+        // <FireBallEffectController 
+        //   key={effect.key} 
+        //   startPosition={effect.startPosition} 
+        //   direction={effect.direction}
+        //   onComplete={() => handleMagicEffectComplete(effect.key)} 
+        //   />
+          <LaserEffectController 
+            key={effect.key} 
+            startPosition={effect.startPosition} 
+            direction={effect.direction}
+            getLatestPosition={getPlayerPosition}
+            getLatestDirection={getPlayerDirection}
+            onComplete={() => handleMagicEffectComplete(effect.key)} 
+          />
         ))}
       </Physics>
     </>
