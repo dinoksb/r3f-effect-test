@@ -25,7 +25,7 @@ export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
   onComplete,
   getLatestPosition,
   getLatestDirection,
-  hitInterval = 1000,
+  hitInterval = 500,
 }) => {
   const [spawned, setSpawned] = useState(false);
   
