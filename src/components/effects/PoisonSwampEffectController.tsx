@@ -1,15 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { PoisonSwamp } from "./PoisonSwamp";
 import { PoisonSwampProps } from "../../types/magic";
 
-const DURATION = 2000;
-const HIT_INTERVAL = 500;
-
 export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
   targetPosition,
+  duration,
+  hitInterval,
   onHit,
   onComplete,
   debug = false,
@@ -17,8 +16,6 @@ export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
   const { world } = useRapier();
   const [finalPos, setFinalPos] = useState<THREE.Vector3 | null>(null);
   const [isCalc, setIsCalc] = useState(true);
-  const duration = useMemo(() => DURATION, []);
-  const hitInterval = useMemo(() => HIT_INTERVAL, []);
 
   useEffect(() => {
     // (1) Raycast로 바닥 높이 찾기

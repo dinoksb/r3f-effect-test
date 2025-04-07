@@ -36,6 +36,14 @@ const MAGIC_CONFIG = {
   METEOR: {
     DURATION: 2000,
     COUNT: 10,
+    SPREAD: 10,
+    RAY_ORIGIN_Y_OFFSET: 20,
+  },
+  LIGHTNING: {
+    DURATION: 700,
+    STRIKE_COUNT: 5,
+    SPREAD: 0.5,
+    RAY_ORIGIN_Y_OFFSET: 20,
   },
   POISONSWAMP: {
     DURATION: 2000,
@@ -132,6 +140,10 @@ function createLightning(props: LightningFactoryProps): React.ReactNode {
   const lightningProps: LightningProps = {
     type,
     targetPosition,
+    duration: MAGIC_CONFIG.LIGHTNING.DURATION,
+    strikeCount: MAGIC_CONFIG.LIGHTNING.STRIKE_COUNT,
+    spread: MAGIC_CONFIG.LIGHTNING.SPREAD,
+    rayOriginYOffset: MAGIC_CONFIG.LIGHTNING.RAY_ORIGIN_Y_OFFSET,
     onHit,
     onComplete,
     debug,
@@ -150,6 +162,9 @@ function createMeteor(props: MeteorFactoryProps): React.ReactNode {
     type,
     targetPosition,
     count: MAGIC_CONFIG.METEOR.COUNT,
+    duration: MAGIC_CONFIG.METEOR.DURATION,
+    spread: MAGIC_CONFIG.METEOR.SPREAD,
+    rayOriginYOffset: MAGIC_CONFIG.METEOR.RAY_ORIGIN_Y_OFFSET,
     onHit,
     onComplete,
     debug,

@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { LightningStrike } from "./LightningStrike";
 import { LightningProps } from "../../types/magic";
 
-const DURATION = 700;
-const STRIKE_COUNT = 5;
-const SPREAD = 0.5;
-const RAY_ORIGIN_Y_OFFSET = 20;
-
 export const LightningEffectController: React.FC<LightningProps> = ({
   targetPosition,
+  duration,
+  strikeCount,
+  spread,
+  rayOriginYOffset,
   onHit,
   onComplete,
   debug = false,
@@ -22,10 +21,6 @@ export const LightningEffectController: React.FC<LightningProps> = ({
   );
   const [isCalculating, setIsCalculating] = useState(true);
   const { world } = useRapier();
-  const effectDuration = useMemo(() => DURATION, []);
-  const strikeCount = useMemo(() => STRIKE_COUNT, []);
-  const spread = useMemo(() => SPREAD, []);
-  const rayOriginYOffset = useMemo(() => RAY_ORIGIN_Y_OFFSET, []);
   const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -101,7 +96,7 @@ export const LightningEffectController: React.FC<LightningProps> = ({
 
       timerRef.current = setTimeout(() => {
         onComplete();
-      }, effectDuration);
+      }, duration);
     } else {
       // This case should be less likely now with the fallback
       console.log("Controller found no targets and no fallback.");
@@ -117,7 +112,7 @@ export const LightningEffectController: React.FC<LightningProps> = ({
     targetPosition,
     world,
     onComplete,
-    effectDuration,
+    duration,
     strikeCount,
     spread,
     rayOriginYOffset,

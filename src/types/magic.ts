@@ -71,12 +71,19 @@ export interface LaserProps extends DirectionalMagicProps {
 // Lightning 마법 Props
 export interface LightningProps extends TargetPositionMagicProps {
   type: MagicType.Lightning;
+  duration: number;
+  strikeCount: number;
+  spread: number;
+  rayOriginYOffset: number;
 }
 
 // Meteor 마법 Props
 export interface MeteorProps extends TargetPositionMagicProps {
   type: MagicType.Meteor;
   count: number;
+  duration: number;
+  spread: number;
+  rayOriginYOffset: number;
 }
 
 // PoisonSwamp 마법 Props
