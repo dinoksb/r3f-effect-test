@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
 import { MeteorProps } from "../../types/magic";
 
+const COUNT = 1;
+const DURATION = 1500;
+const SPREAD = 10;
+const RAY_ORIGIN_Y_OFFSET = 20;
+
 export const MeteorEffectController: React.FC<MeteorProps> = ({
   targetPosition,
-  count = 5,
   onHit,
   onComplete,
   debug = false,
@@ -16,9 +20,10 @@ export const MeteorEffectController: React.FC<MeteorProps> = ({
   const [targetPositions, setTargetPositions] = useState<THREE.Vector3[]>([]);
   const [startPosition, setStartPosition] = useState<THREE.Vector3>();
 
-  const effectDuration = 1500;
-  const spread = 10;
-  const rayOriginYOffset = 20;
+  const count = useMemo(() => COUNT, []);
+  const effectDuration = useMemo(() => DURATION, []);
+  const spread = useMemo(() => SPREAD, []);
+  const rayOriginYOffset = useMemo(() => RAY_ORIGIN_Y_OFFSET, []);
 
   // Generate all meteor target positions at once based on the provided target position
   useEffect(() => {
@@ -64,7 +69,7 @@ export const MeteorEffectController: React.FC<MeteorProps> = ({
 
     // Set all target positions at once
     setTargetPositions(generated);
-  }, [count, targetPosition, world]);
+  }, [count, spread, rayOriginYOffset, targetPosition, world]);
 
   if (!startPosition || targetPositions.length === 0) return null;
 

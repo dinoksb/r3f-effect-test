@@ -84,6 +84,9 @@ export interface PoisonSwampProps extends TargetPositionMagicProps {
   type: MagicType.PoisonSwamp;
   duration: number;
   hitInterval: number;
+  radius: number;
+  height: number;
+  opacity: number;
 }
 
 /**

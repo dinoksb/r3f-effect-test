@@ -1,15 +1,22 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
 import { Explosion } from "./Explosion";
 import { FireBallProps } from "../../types/magic";
 
+const SPEED = 10;
+const DURATION = 2000;
+
 export const FireBallEffectController: React.FC<FireBallProps> = ({
   type,
   startPosition,
   direction,
-  speed = 10,
-  duration = 2000,
   onHit,
   onComplete,
   debug = false,
@@ -19,6 +26,9 @@ export const FireBallEffectController: React.FC<FireBallProps> = ({
     { key: number; pos: [number, number, number] }[]
   >([]);
   const explosionKeyCounter = useRef(0);
+
+  const speed = useMemo(() => SPEED, []);
+  const duration = useMemo(() => DURATION, []);
 
   // only for debug
   const caclcStartPosition = startPosition

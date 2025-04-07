@@ -34,10 +34,14 @@ const MAGIC_CONFIG = {
     HIT_INTERVAL: 500,
   },
   METEOR: {
-    COUNT: 5,
+    DURATION: 2000,
+    COUNT: 10,
   },
   POISONSWAMP: {
-    DURATION: 3000,
+    DURATION: 2000,
+    RADIUS: 5,
+    HEIGHT: -0.5,
+    OPACITY: 0.5,
     HIT_INTERVAL: 500,
   },
 };
@@ -165,6 +169,9 @@ function createPoisonSwamp(props: PoisonSwampFactoryProps): React.ReactNode {
     targetPosition,
     duration: MAGIC_CONFIG.POISONSWAMP.DURATION,
     hitInterval: MAGIC_CONFIG.POISONSWAMP.HIT_INTERVAL,
+    radius: MAGIC_CONFIG.POISONSWAMP.RADIUS,
+    height: MAGIC_CONFIG.POISONSWAMP.HEIGHT,
+    opacity: MAGIC_CONFIG.POISONSWAMP.OPACITY,
     onHit,
     onComplete,
     debug,
