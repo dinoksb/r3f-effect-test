@@ -173,19 +173,20 @@ export function Experience() {
         <Floor />
         {/* Render active lightning effects at the scene level */}
         {activeEffects.map((effect) => (
-          <FireBallEffectController
-            key={effect.key}
-            startPosition={effect.startPosition}
-            direction={effect.direction}
-            onHit={handleEffectHit}
-            onComplete={() => handleMagicEffectComplete(effect.key)}
-          />
-          // <PoisonSwampEffectController
+          // <FireBallEffectController
           //   key={effect.key}
-          //   targetPosition={new THREE.Vector3(20, 0, 0)}
+          //   startPosition={effect.startPosition}
+          //   direction={effect.direction}
           //   onHit={handleEffectHit}
           //   onComplete={() => handleMagicEffectComplete(effect.key)}
           // />
+
+          <PoisonSwampEffectController
+            key={effect.key}
+            targetPosition={new THREE.Vector3(0, 0, 0)}
+            onHit={handleEffectHit}
+            onComplete={() => handleMagicEffectComplete(effect.key)}
+          />
 
           // <MeteorEffectController
           //   key={effect.key}
@@ -200,6 +201,7 @@ export function Experience() {
           //   onHit={handleEffectHit}
           //   onComplete={() => handleMagicEffectComplete(effect.key)}
           // />
+
           // <LaserEffectController
           //   key={effect.key}
           //   startPosition={effect.startPosition}
