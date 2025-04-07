@@ -181,12 +181,12 @@ export function Experience() {
           //   onComplete={() => handleMagicEffectComplete(effect.key)}
           // />
 
-          <PoisonSwampEffectController
-            key={effect.key}
-            targetPosition={new THREE.Vector3(0, 0, 0)}
-            onHit={handleEffectHit}
-            onComplete={() => handleMagicEffectComplete(effect.key)}
-          />
+          // <PoisonSwampEffectController
+          //   key={effect.key}
+          //   targetPosition={new THREE.Vector3(0, 0, 0)}
+          //   onHit={handleEffectHit}
+          //   onComplete={() => handleMagicEffectComplete(effect.key)}
+          // />
 
           // <MeteorEffectController
           //   key={effect.key}
@@ -202,15 +202,15 @@ export function Experience() {
           //   onComplete={() => handleMagicEffectComplete(effect.key)}
           // />
 
-          // <LaserEffectController
-          //   key={effect.key}
-          //   startPosition={effect.startPosition}
-          //   direction={effect.direction}
-          //   getLatestPosition={getPlayerPosition}
-          //   getLatestDirection={getPlayerDirection}
-          //   onHit={handleEffectHit}
-          //   onComplete={() => handleMagicEffectComplete(effect.key)}
-          // />
+          <LaserEffectController
+            key={effect.key}
+            startPosition={effect.startPosition}
+            direction={effect.direction}
+            getLatestPosition={getPlayerPosition}
+            getLatestDirection={getPlayerDirection}
+            onHit={handleEffectHit}
+            onComplete={() => handleMagicEffectComplete(effect.key)}
+          />
         ))}
       </Physics>
     </>
