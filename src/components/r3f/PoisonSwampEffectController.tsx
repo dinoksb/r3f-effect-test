@@ -6,13 +6,14 @@ import { PoisonSwamp } from "./PoisonSwamp";
 
 interface PoisonCloudEffectControllerProps {
   targetPosition: THREE.Vector3;
-  onComplete: () => void;
   duration?: number;
+  onHit: (other: unknown, pos: THREE.Vector3) => void;
+  onComplete: () => void;
 }
 
 export const PoisonSwampEffectController: React.FC<
   PoisonCloudEffectControllerProps
-> = ({ targetPosition, onComplete, duration = 3000 }) => {
+> = ({ targetPosition, onHit, onComplete, duration = 3000 }) => {
   const { world } = useRapier();
   const [finalPos, setFinalPos] = useState<THREE.Vector3 | null>(null);
   const [isCalc, setIsCalc] = useState(true);
@@ -41,9 +42,8 @@ export const PoisonSwampEffectController: React.FC<
     <PoisonSwamp
       center={finalPos}
       duration={duration}
-      onComplete={() => {
-        onComplete();
-      }}
+      onHit={onHit}
+      onComplete={onComplete}
     />
   );
 };

@@ -12,6 +12,7 @@ import { LaserEffectController } from "./LaserEffectController";
 import { LightningEffectController } from "./LightningEffectController";
 import { MeteorEffectController } from "./MeteorEffectController";
 import { PoisonSwampEffectController } from "./PoisonSwampEffectController";
+import { FireBallEffectController } from "./FireBallEffectController";
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -171,14 +172,20 @@ export function Experience() {
         {/* Floor */}
         <Floor />
         {/* Render active lightning effects at the scene level */}
-
         {activeEffects.map((effect) => (
-          <PoisonSwampEffectController
+          <FireBallEffectController
             key={effect.key}
-            targetPosition={new THREE.Vector3(20, 0, 0)}
+            startPosition={effect.startPosition}
+            direction={effect.direction}
             onHit={handleEffectHit}
             onComplete={() => handleMagicEffectComplete(effect.key)}
           />
+          // <PoisonSwampEffectController
+          //   key={effect.key}
+          //   targetPosition={new THREE.Vector3(20, 0, 0)}
+          //   onHit={handleEffectHit}
+          //   onComplete={() => handleMagicEffectComplete(effect.key)}
+          // />
 
           // <MeteorEffectController
           //   key={effect.key}
