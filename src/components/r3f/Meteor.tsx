@@ -145,7 +145,6 @@ const Hitbox: React.FC<HitboxProps> = ({
 
 // Single Meteor instance component
 interface SingleMeteorProps {
-  key: number;
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
   duration: number;

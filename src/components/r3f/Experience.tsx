@@ -11,6 +11,7 @@ import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { LaserEffectController } from "./LaserEffectController";
 import { LightningEffectController } from "./LightningEffectController";
 import { MeteorEffectController } from "./MeteorEffectController";
+import { PoisonSwampEffectController } from "./PoisonSwampEffectController";
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -172,12 +173,20 @@ export function Experience() {
         {/* Render active lightning effects at the scene level */}
 
         {activeEffects.map((effect) => (
-          <MeteorEffectController
+          <PoisonSwampEffectController
             key={effect.key}
             targetPosition={new THREE.Vector3(20, 0, 0)}
             onHit={handleEffectHit}
             onComplete={() => handleMagicEffectComplete(effect.key)}
           />
+
+          // <MeteorEffectController
+          //   key={effect.key}
+          //   targetPosition={new THREE.Vector3(20, 0, 0)}
+          //   onHit={handleEffectHit}
+          //   onComplete={() => handleMagicEffectComplete(effect.key)}
+          // />
+
           // <LightningEffectController
           //   key={effect.key}
           //   targetPosition={new THREE.Vector3(0, 0, 0)}
