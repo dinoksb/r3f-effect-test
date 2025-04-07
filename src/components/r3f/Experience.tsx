@@ -8,19 +8,16 @@ import { Floor } from "./Floor";
 import { RandomBoxes } from "./RandomBoxes";
 import * as THREE from "three";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
-import { LaserEffectController } from "./LaserEffectController";
-import { LightningEffectController } from "./LightningEffectController";
-import { MeteorEffectController } from "./MeteorEffectController";
-import { PoisonSwampEffectController } from "./PoisonSwampEffectController";
-import { FireBallEffectController } from "./FireBallEffectController";
+import { MagicFactory } from "../../factories/MagicFactory";
+import { MagicType } from "../../types/magic";
 
-// Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
   key: number;
+  type: MagicType;
   direction: THREE.Vector3;
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
-  sourceRef?: React.RefObject<PlayerRef>; // 레이저 소스 참조 (플레이어)
+  sourceRef?: React.RefObject<PlayerRef>;
 }
 
 export function Experience() {
@@ -28,19 +25,17 @@ export function Experience() {
   const playerRef = useRef<PlayerRef>(null);
   const targetHeight = 1.6;
 
-  // State for active lightning effects, managed here
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
+  const [selectedMagic, setSelectedMagic] = useState<MagicType>(
+    MagicType.FireBall
+  );
   const effectKeyCounter = useRef(0);
 
-  /**
-   * Delay physics activate
-   */
   const [pausedPhysics, setPausedPhysics] = useState(true);
   useEffect(() => {
     const timeout = setTimeout(() => {
       setPausedPhysics(false);
     }, 500);
-
     return () => clearTimeout(timeout);
   }, []);
 
@@ -48,7 +43,6 @@ export function Experience() {
     if (playerRef.current) {
       const boundingBox = playerRef.current.boundingBox;
       const size = playerRef.current.size;
-
       if (boundingBox && size) {
         console.log("Character size information updated:", {
           boundingBox,
@@ -58,34 +52,31 @@ export function Experience() {
     }
   }, [playerRef.current?.boundingBox, playerRef.current?.size]);
 
-  // Callback for Player to request a magic cast
   const handleCastMagic = useCallback(
     (
+      type: MagicType,
       direction: THREE.Vector3,
       startPosition: THREE.Vector3,
       targetPosition: THREE.Vector3
     ) => {
-      console.log("Experience received cast request at:", targetPosition);
       const newKey = effectKeyCounter.current++;
-
-      // sourceRef에 playerRef 추가하여 위치와 방향을 동적으로 얻을 수 있도록 함
       setActiveEffects((prev) => [
         ...prev,
         {
           key: newKey,
-          direction: direction,
-          startPosition: startPosition,
-          targetPosition: targetPosition,
-          sourceRef: playerRef, // 플레이어 참조 전달
+          type,
+          direction,
+          startPosition,
+          targetPosition,
+          sourceRef: playerRef,
         },
       ]);
     },
     []
-  ); // No dependencies needed as it only uses refs and setters
+  );
 
-  // Callback to remove completed effects
   const handleMagicEffectComplete = useCallback((keyToRemove: number) => {
-    console.log(`Experience removing effect ${keyToRemove}`);
+    console.log("Experience complete effect", keyToRemove);
     setActiveEffects((prevEffects) =>
       prevEffects.filter((effect) => effect.key !== keyToRemove)
     );
@@ -95,22 +86,18 @@ export function Experience() {
     console.log("Experience hit effect", other, pos);
   }, []);
 
-  // 플레이어의 최신 포지션을 가져오는 함수
   const getPlayerPosition = useCallback(() => {
     if (!playerRef.current || !controllerRef.current?.rigidBodyRef?.current)
       return new THREE.Vector3();
-
     const position = controllerRef.current.rigidBodyRef.current.translation();
     return new THREE.Vector3(position.x, position.y, position.z);
   }, []);
 
-  // 플레이어의 최신 방향을 가져오는 함수
   const getPlayerDirection = useCallback(() => {
     if (!playerRef.current || !controllerRef.current?.rigidBodyRef?.current)
       return new THREE.Vector3(0, 0, 1);
-
     const rigidBody = controllerRef.current.rigidBodyRef.current;
-    const rotation = rigidBody.rotation(); // Quaternion
+    const rotation = rigidBody.rotation();
     const quaternion = new THREE.Quaternion(
       rotation.x,
       rotation.y,
@@ -120,9 +107,20 @@ export function Experience() {
     return new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion).normalize();
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "1") setSelectedMagic(MagicType.FireBall);
+      if (e.key === "2") setSelectedMagic(MagicType.Laser);
+      if (e.key === "3") setSelectedMagic(MagicType.Lightning);
+      if (e.key === "4") setSelectedMagic(MagicType.Meteor);
+      if (e.key === "5") setSelectedMagic(MagicType.PoisonSwamp);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <>
-      {/* Grid */}
       <Grid
         args={[100, 100]}
         position={[0, 0.01, 0]}
@@ -134,78 +132,44 @@ export function Experience() {
         sectionColor="#9f9f9f"
         fadeDistance={100}
         fadeStrength={1}
-        userData={{ camExcludeCollision: true }} // this won't be collide by camera ray
+        userData={{ camExcludeCollision: true }}
       />
 
       <ambientLight intensity={0.7} />
 
       <Physics debug={false} paused={pausedPhysics}>
-        {/* Keyboard preset */}
         <KeyboardControls map={keyboardMap}>
-          {/* Environment */}
           <Environment preset="night" background={true} />
 
-          {/* player character with controller */}
           <FreeViewController
             ref={controllerRef}
             targetHeight={targetHeight}
             camInitDis={-10}
             camMinDis={-10}
-            followLight={{
-              position: [20, 30, 10],
-              intensity: 1.2,
-            }}
+            followLight={{ position: [20, 30, 10], intensity: 1.2 }}
           >
             <Player
               ref={playerRef}
               initState={CharacterState.IDLE}
               controllerRef={controllerRef}
               targetHeight={targetHeight}
-              onCastMagic={handleCastMagic}
+              onCastMagic={(dir, start, target) =>
+                handleCastMagic(selectedMagic, dir, start, target)
+              }
             />
           </FreeViewController>
         </KeyboardControls>
 
-        {/* RandomBoxes */}
         <RandomBoxes count={20} range={10} />
-
-        {/* Floor */}
         <Floor />
-        {/* Render active lightning effects at the scene level */}
+
         {activeEffects.map((effect) => (
-          // <FireBallEffectController
-          //   key={effect.key}
-          //   startPosition={effect.startPosition}
-          //   direction={effect.direction}
-          //   onHit={handleEffectHit}
-          //   onComplete={() => handleMagicEffectComplete(effect.key)}
-          // />
-
-          // <PoisonSwampEffectController
-          //   key={effect.key}
-          //   targetPosition={new THREE.Vector3(0, 0, 0)}
-          //   onHit={handleEffectHit}
-          //   onComplete={() => handleMagicEffectComplete(effect.key)}
-          // />
-
-          // <MeteorEffectController
-          //   key={effect.key}
-          //   targetPosition={new THREE.Vector3(20, 0, 0)}
-          //   onHit={handleEffectHit}
-          //   onComplete={() => handleMagicEffectComplete(effect.key)}
-          // />
-
-          // <LightningEffectController
-          //   key={effect.key}
-          //   targetPosition={new THREE.Vector3(0, 0, 0)}
-          //   onHit={handleEffectHit}
-          //   onComplete={() => handleMagicEffectComplete(effect.key)}
-          // />
-
-          <LaserEffectController
+          <MagicFactory
             key={effect.key}
+            type={effect.type}
             startPosition={effect.startPosition}
             direction={effect.direction}
+            targetPosition={effect.targetPosition}
             getLatestPosition={getPlayerPosition}
             getLatestDirection={getPlayerDirection}
             onHit={handleEffectHit}

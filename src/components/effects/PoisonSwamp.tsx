@@ -9,19 +9,20 @@ import {
   IntersectionEnterHandler,
   IntersectionExitHandler,
 } from "@react-three/rapier";
+import { CompleteCallback, HitCallback } from "../../types/magic";
 
 interface PoisonCloudProps {
   center: THREE.Vector3;
-  duration?: number;
+  duration: number;
   fadeOutDuration?: number;
   radius?: number;
   height?: number;
   opacity?: number;
   particleCount?: number;
   hitInterval?: number;
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
-  onComplete?: () => void;
-  debug?: boolean;
+  onComplete: CompleteCallback;
+  onHit: HitCallback;
+  debug: boolean;
 }
 
 interface BubbleParticle {

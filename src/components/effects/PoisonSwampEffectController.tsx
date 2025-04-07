@@ -3,17 +3,15 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { PoisonSwamp } from "./PoisonSwamp";
+import { PoisonSwampProps } from "../../types/magic";
 
-interface PoisonCloudEffectControllerProps {
-  targetPosition: THREE.Vector3;
-  duration?: number;
-  onHit: (other: unknown, pos: THREE.Vector3) => void;
-  onComplete: () => void;
-}
-
-export const PoisonSwampEffectController: React.FC<
-  PoisonCloudEffectControllerProps
-> = ({ targetPosition, onHit, onComplete, duration = 3000 }) => {
+export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
+  targetPosition,
+  onHit,
+  onComplete,
+  duration = 3000,
+  debug = false,
+}) => {
   const { world } = useRapier();
   const [finalPos, setFinalPos] = useState<THREE.Vector3 | null>(null);
   const [isCalc, setIsCalc] = useState(true);
@@ -44,6 +42,7 @@ export const PoisonSwampEffectController: React.FC<
       duration={duration}
       onHit={onHit}
       onComplete={onComplete}
+      debug={debug}
     />
   );
 };

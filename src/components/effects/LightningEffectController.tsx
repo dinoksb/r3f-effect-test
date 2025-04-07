@@ -3,16 +3,14 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { LightningStrike } from "./LightningStrike";
+import { LightningProps } from "../../types/magic";
 
-interface LightningEffectControllerProps {
-  targetPosition: THREE.Vector3; // Only receive the initial target position on the ground
-  onHit: (other?: unknown, pos?: THREE.Vector3) => void;
-  onComplete: () => void;
-}
-
-export const LightningEffectController: React.FC<
-  LightningEffectControllerProps
-> = ({ targetPosition, onHit, onComplete }) => {
+export const LightningEffectController: React.FC<LightningProps> = ({
+  targetPosition,
+  onHit,
+  onComplete,
+  debug = false,
+}) => {
   const [actualTargets, setActualTargets] = useState<THREE.Vector3[]>([]);
   const [startPosition, setStartPosition] = useState<THREE.Vector3 | null>(
     null
@@ -97,7 +95,6 @@ export const LightningEffectController: React.FC<
       setIsCalculating(false);
 
       timerRef.current = setTimeout(() => {
-        console.log("LightningEffectController duration ended.");
         onComplete();
       }, effectDuration);
     } else {
@@ -122,6 +119,7 @@ export const LightningEffectController: React.FC<
       commonStartPosition={startPosition}
       targetPositions={actualTargets}
       onHit={onHit}
+      debug={debug}
     />
   );
 };

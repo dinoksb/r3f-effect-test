@@ -1,16 +1,8 @@
-import React, { useRef, useState } from 'react';
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { RigidBody, BallCollider } from '@react-three/rapier';
-
-interface FireBallProps {
-  startPosition: THREE.Vector3;
-  direction: THREE.Vector3;  // 정규화된 방향 벡터
-  speed: number;             // 1초당 이동 거리
-  duration: number;          // 생존 시간 (밀리초)
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;  // 충돌 시 콜백
-  onComplete?: () => void;
-}
+import React, { useRef, useState } from "react";
+import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
+import { RigidBody, BallCollider } from "@react-three/rapier";
+import { FireBallProps } from "../../types/magic";
 
 export const FireBall: React.FC<FireBallProps> = ({
   startPosition,
@@ -35,7 +27,7 @@ export const FireBall: React.FC<FireBallProps> = ({
   const coreRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
 
-    // 처음 몇 프레임 건너뛴 뒤 Trail을 보여주도록
+  // 처음 몇 프레임 건너뛴 뒤 Trail을 보여주도록
   const frameCountRef = useRef(0);
 
   // 매 프레임마다 kinematic RigidBody의 위치와 이펙트를 업데이트
@@ -53,9 +45,9 @@ export const FireBall: React.FC<FireBallProps> = ({
     const seconds = elapsed / 1000;
 
     // // 새 위치 = 초기 위치 + 방향 * 속도 * 경과시간
-    const currentPos = startPosition.clone().add(
-      direction.clone().multiplyScalar(speed * seconds)
-    );
+    const currentPos = startPosition
+      .clone()
+      .add(direction.clone().multiplyScalar(speed * seconds));
 
     // // Rapier Kinematic Body 이동 업데이트
     // setNextKinematicTranslation( { x, y, z } ) 형태로 전달
@@ -66,7 +58,7 @@ export const FireBall: React.FC<FireBallProps> = ({
     });
 
     // Fade out 계산
-    const fadeStart = duration - 400; 
+    const fadeStart = duration - 400;
     const fadeElapsed = Math.max(elapsed - fadeStart, 0);
     const fadeProgress = THREE.MathUtils.clamp(fadeElapsed / 400, 0, 1);
     const opacityFactor = 1 - fadeProgress;
@@ -112,15 +104,15 @@ export const FireBall: React.FC<FireBallProps> = ({
       ref={rigidRef}
       // Sensor 충돌 모드 설정
       type="kinematicPosition"
-      colliders={false}   // 아래 BallCollider로 모양 지정
-      sensor={true}       // 물리 반응 없이 충돌 이벤트만
+      colliders={false} // 아래 BallCollider로 모양 지정
+      sensor={true} // 물리 반응 없이 충돌 이벤트만
       // 충돌(교차) 이벤트
       onIntersectionEnter={(other) => {
         // FireBall이 다른 RigidBody와 교차하면 호출
         const translation = rigidRef.current?.translation();
         const hitPosition = translation
-        ? new THREE.Vector3(translation.x, translation.y, translation.z)
-        : undefined;
+          ? new THREE.Vector3(translation.x, translation.y, translation.z)
+          : undefined;
         onHit?.(other, hitPosition);
         setDestroyed(true);
       }}

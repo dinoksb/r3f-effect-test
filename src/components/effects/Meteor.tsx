@@ -4,15 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { Sphere, Trail } from "@react-three/drei";
 import { Explosion } from "./Explosion";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-
-interface MeteorProps {
-  startPosition: THREE.Vector3;
-  targetPositions: THREE.Vector3[]; // Changed to an array
-  duration: number;
-  onHit?: (other?: unknown, targetPos?: THREE.Vector3) => void; // Added other parameter for collision object
-  onComplete?: () => void; // Called when all meteors have completed
-  debug?: boolean; // For debug visualization of collision areas
-}
+import { CompleteCallback, HitCallback } from "../../types/magic";
 
 // Component for the impact effect when the fireball hits the target
 interface ImpactEffectProps {
@@ -79,9 +71,9 @@ const ImpactEffect: React.FC<ImpactEffectProps> = ({
 interface HitboxProps {
   position: THREE.Vector3;
   duration: number;
+  radius: number; // Required radius parameter
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   debug?: boolean;
-  radius: number; // Required radius parameter
 }
 
 const Hitbox: React.FC<HitboxProps> = ({
@@ -149,9 +141,9 @@ interface SingleMeteorProps {
   targetPosition: THREE.Vector3;
   duration: number;
   startDelay: number;
-  onHit?: (other?: unknown, targetPos?: THREE.Vector3) => void;
-  onComplete?: () => void;
-  debug?: boolean;
+  onHit: HitCallback;
+  onComplete: CompleteCallback;
+  debug: boolean;
 }
 
 const SingleMeteor: React.FC<SingleMeteorProps> = ({
@@ -308,7 +300,15 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
   );
 };
 
-export const Meteor: React.FC<MeteorProps> = ({
+interface InternalMeteorProps {
+  startPosition: THREE.Vector3;
+  targetPositions: THREE.Vector3[];
+  duration: number;
+  onHit: HitCallback;
+  onComplete: CompleteCallback;
+  debug: boolean;
+}
+export const Meteor: React.FC<InternalMeteorProps> = ({
   startPosition,
   targetPositions,
   duration,

@@ -3,21 +3,14 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
+import { MeteorProps } from "../../types/magic";
 
-interface MeteorEffectControllerProps {
-  targetPosition: THREE.Vector3;
-  count?: number;
-  startPosition?: THREE.Vector3;
-  onHit: (other?: unknown, targetPos?: THREE.Vector3) => void;
-  onComplete: () => void;
-}
-
-export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
+export const MeteorEffectController: React.FC<MeteorProps> = ({
   targetPosition,
   count = 5,
-  startPosition: initialStartPosition,
   onHit,
   onComplete,
+  debug = false,
 }) => {
   const { world } = useRapier();
   const [targetPositions, setTargetPositions] = useState<THREE.Vector3[]>([]);
@@ -29,13 +22,11 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
 
   // Generate all meteor target positions at once based on the provided target position
   useEffect(() => {
-    const baseStart =
-      initialStartPosition ||
-      new THREE.Vector3(
-        targetPosition.x,
-        targetPosition.y + rayOriginYOffset,
-        targetPosition.z - 15
-      );
+    const baseStart = new THREE.Vector3(
+      targetPosition.x,
+      targetPosition.y + rayOriginYOffset,
+      targetPosition.z - 15
+    );
     setStartPosition(baseStart);
 
     const generated: THREE.Vector3[] = [];
@@ -73,7 +64,7 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
 
     // Set all target positions at once
     setTargetPositions(generated);
-  }, [count, targetPosition, initialStartPosition, world]);
+  }, [count, targetPosition, world]);
 
   if (!startPosition || targetPositions.length === 0) return null;
 
@@ -84,6 +75,7 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
       duration={effectDuration}
       onHit={onHit}
       onComplete={onComplete}
+      debug={debug}
     />
   );
 };

@@ -3,12 +3,13 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Tube, Ring } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
+import { HitCallback } from "../../types/magic";
 
 interface LightningStrikeProps {
   commonStartPosition: THREE.Vector3; // Receive the fixed start position
   targetPositions: THREE.Vector3[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void; // Optional callback for hit detection
-  debug?: boolean; // Show collision area for debugging
+  onHit: HitCallback;
+  debug: boolean;
 }
 
 // Function to generate jagged points for the lightning bolt

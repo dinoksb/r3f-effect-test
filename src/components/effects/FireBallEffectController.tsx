@@ -2,25 +2,17 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
 import { Explosion } from "./Explosion";
+import { FireBallProps } from "../../types/magic";
 
-interface FireBallEffectControllerProps {
-  startPosition: THREE.Vector3;
-  direction: THREE.Vector3; // 외부에서 직접 넘기는 방향 (normalized)
-  speed?: number; // 단위: units per second
-  duration?: number; // lifespan in milliseconds
-  onHit: (other: unknown, pos: THREE.Vector3) => void;
-  onComplete: () => void;
-}
-
-export const FireBallEffectController: React.FC<
-  FireBallEffectControllerProps
-> = ({
+export const FireBallEffectController: React.FC<FireBallProps> = ({
+  type,
   startPosition,
   direction,
   speed = 10,
   duration = 2000,
   onHit,
   onComplete,
+  debug = false,
 }) => {
   const [spawned, setSpawned] = useState(false);
   const [explosions, setExplosions] = useState<
@@ -62,12 +54,14 @@ export const FireBallEffectController: React.FC<
   return (
     <>
       <FireBall
+        type={type}
         startPosition={caclcStartPosition}
         direction={direction}
         speed={speed}
         duration={duration}
         onHit={handleFireBallHit}
         onComplete={onComplete}
+        debug={debug}
       />
 
       {explosions.map((ex) => (

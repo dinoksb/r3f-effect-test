@@ -1,33 +1,19 @@
 import React, { useEffect, useState } from "react";
-import * as THREE from "three";
 import { Laser } from "./Laser";
+import { LaserProps } from "../../types/magic";
 
-interface LaserEffectControllerProps {
-  startPosition: THREE.Vector3;
-  direction: THREE.Vector3; // 외부에서 직접 넘기는 방향 (normalized)
-  duration?: number; // lifespan in milliseconds
-  length?: number; // 레이저 빔 길이
-  thickness?: number; // 레이저 빔 두께
-  onComplete: () => void;
-  onHit: (other: unknown, pos: THREE.Vector3) => void;
-  // 동적 위치와 방향을 가져오는 콜백 함수들
-  getLatestPosition?: () => THREE.Vector3;
-  getLatestDirection?: () => THREE.Vector3;
-  hitInterval?: number; // 히트 판정 간격 (밀리초)
-  showDebugBox?: boolean; // 충돌 박스 시각화 여부
-}
-
-export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
+export const LaserEffectController: React.FC<LaserProps> = ({
+  type,
   startPosition,
   direction,
+  getLatestPosition,
+  getLatestDirection,
   duration = 2000, // 레이저 지속 시간
   length = 15, // 레이저 빔 길이
   thickness = 0.3, // 레이저 빔 두께
-  onComplete,
-  onHit,
-  getLatestPosition,
-  getLatestDirection,
   hitInterval = 500,
+  onHit,
+  onComplete,
 }) => {
   const [spawned, setSpawned] = useState(false);
 
@@ -84,6 +70,7 @@ export const LaserEffectController: React.FC<LaserEffectControllerProps> = ({
   return (
     <>
       <Laser
+        type={type}
         startPosition={currentPosition}
         direction={currentDirection}
         duration={duration}

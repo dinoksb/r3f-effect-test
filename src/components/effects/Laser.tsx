@@ -7,18 +7,7 @@ import {
   IntersectionExitHandler,
   IntersectionEnterHandler,
 } from "@react-three/rapier";
-
-interface LaserProps {
-  startPosition: THREE.Vector3;
-  direction: THREE.Vector3;
-  duration: number;
-  length?: number;
-  thickness?: number;
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
-  onComplete?: () => void;
-  hitInterval?: number;
-  showDebugBox?: boolean;
-}
+import { LaserProps } from "../../types/magic";
 
 export const Laser: React.FC<LaserProps> = ({
   startPosition,
@@ -29,7 +18,7 @@ export const Laser: React.FC<LaserProps> = ({
   onHit,
   onComplete,
   hitInterval = 500,
-  showDebugBox = false,
+  debug = false,
 }) => {
   const [destroyed, setDestroyed] = useState(false);
   const startTime = useRef(Date.now());
@@ -192,7 +181,7 @@ export const Laser: React.FC<LaserProps> = ({
   };
 
   const updateDebugBox = (elapsed: number) => {
-    if (!showDebugBox || !debugBoxRef.current) return;
+    if (!debug || !debugBoxRef.current) return;
     debugBoxRef.current.scale.set(thickness * 2, thickness * 2, length);
     updateMaterialOpacity(
       debugBoxRef.current.material as THREE.MeshBasicMaterial,
@@ -302,7 +291,7 @@ export const Laser: React.FC<LaserProps> = ({
         position={[0, 0, length / 2]}
       />
 
-      {showDebugBox && (
+      {debug && (
         <mesh ref={debugBoxRef} position={[0, 0, length / 2]}>
           <boxGeometry args={[1, 1, 1]} />
           <meshBasicMaterial
