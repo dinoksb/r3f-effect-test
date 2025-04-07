@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { LaserEffectController } from "./LaserEffectController";
 import { LightningEffectController } from "./LightningEffectController";
+import { MeteorEffectController } from "./MeteorEffectController";
 
 // Define type for active effect state (same as in Player previously)
 interface ActiveEffect {
@@ -171,12 +172,18 @@ export function Experience() {
         {/* Render active lightning effects at the scene level */}
 
         {activeEffects.map((effect) => (
-          <LightningEffectController
+          <MeteorEffectController
             key={effect.key}
-            targetPosition={new THREE.Vector3(0, 0, 0)}
+            targetPosition={new THREE.Vector3(20, 0, 0)}
             onHit={handleEffectHit}
             onComplete={() => handleMagicEffectComplete(effect.key)}
           />
+          // <LightningEffectController
+          //   key={effect.key}
+          //   targetPosition={new THREE.Vector3(0, 0, 0)}
+          //   onHit={handleEffectHit}
+          //   onComplete={() => handleMagicEffectComplete(effect.key)}
+          // />
           // <LaserEffectController
           //   key={effect.key}
           //   startPosition={effect.startPosition}

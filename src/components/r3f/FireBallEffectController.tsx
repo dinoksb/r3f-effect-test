@@ -75,7 +75,7 @@ export const FireBallEffectController: React.FC<
           key={ex.key}
           position={ex.pos}
           scale={0.5}
-          onFinish={() => handleExplosionFinish(ex.key)}
+          onComplete={() => handleExplosionFinish(ex.key)}
         />
       ))}
     </>
