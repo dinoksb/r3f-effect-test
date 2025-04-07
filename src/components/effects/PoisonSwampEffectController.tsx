@@ -10,6 +10,7 @@ export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
   onHit,
   onComplete,
   duration = 3000,
+  hitInterval = 500,
   debug = false,
 }) => {
   const { world } = useRapier();
@@ -40,6 +41,7 @@ export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
     <PoisonSwamp
       center={finalPos}
       duration={duration}
+      hitInterval={hitInterval}
       onHit={onHit}
       onComplete={onComplete}
       debug={debug}

@@ -1,71 +1,28 @@
 import React from "react";
 import {
   MagicType,
+  MagicFactoryProps,
   FireBallProps,
   LaserProps,
   LightningProps,
   MeteorProps,
   PoisonSwampProps,
+  FireBallFactoryProps,
+  LaserFactoryProps,
+  LightningFactoryProps,
+  MeteorFactoryProps,
+  PoisonSwampFactoryProps,
 } from "../types/magic";
 import { FireBallEffectController } from "../components/effects/FireBallEffectController";
 import { LaserEffectController } from "../components/effects/LaserEffectController";
 import { LightningEffectController } from "../components/effects/LightningEffectController";
 import { MeteorEffectController } from "../components/effects/MeteorEffectController";
 import { PoisonSwampEffectController } from "../components/effects/PoisonSwampEffectController";
-import * as THREE from "three";
 
-// 공통 props (모든 마법 타입이 공유)
-type CommonProps = {
-  key?: number | string;
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
-  onComplete?: () => void;
-  debug?: boolean;
-};
-
-// 방향성 마법 전용 props
-type DirectionalProps = CommonProps & {
-  startPosition: THREE.Vector3;
-  direction: THREE.Vector3;
-};
-
-// 위치 타겟팅 마법 전용 props
-type TargetPositionProps = CommonProps & {
-  targetPosition: THREE.Vector3;
-};
-
-// 타입별 필수 props 정의
-type FireBallFactoryProps = DirectionalProps & {
-  type: MagicType.FireBall;
-};
-
-type LaserFactoryProps = DirectionalProps & {
-  type: MagicType.Laser;
-  getLatestPosition?: () => THREE.Vector3;
-  getLatestDirection?: () => THREE.Vector3;
-};
-
-type LightningFactoryProps = TargetPositionProps & {
-  type: MagicType.Lightning;
-};
-
-type MeteorFactoryProps = TargetPositionProps & {
-  type: MagicType.Meteor;
-};
-
-type PoisonSwampFactoryProps = TargetPositionProps & {
-  type: MagicType.PoisonSwamp;
-};
-
-// Union 타입으로 MagicFactoryProps 정의
-export type MagicFactoryProps =
-  | FireBallFactoryProps
-  | LaserFactoryProps
-  | LightningFactoryProps
-  | MeteorFactoryProps
-  | PoisonSwampFactoryProps;
-
-// 상수값 정의 (마법별 기본값)
-const MAGIC_CONSTANTS = {
+/**
+ * 마법별 기본 설정값 (상수)
+ */
+const MAGIC_CONFIG = {
   FIREBALL: {
     SPEED: 10,
     DURATION: 2000,
@@ -79,6 +36,10 @@ const MAGIC_CONSTANTS = {
   METEOR: {
     COUNT: 5,
   },
+  POISONSWAMP: {
+    DURATION: 3000,
+    HIT_INTERVAL: 500,
+  },
 };
 
 /**
@@ -90,15 +51,15 @@ export const MagicFactory: React.FC<MagicFactoryProps> = (props) => {
 
   switch (type) {
     case MagicType.FireBall:
-      return createFireBall(props);
+      return createFireBall(props as FireBallFactoryProps);
     case MagicType.Laser:
-      return createLaser(props);
+      return createLaser(props as LaserFactoryProps);
     case MagicType.Lightning:
-      return createLightning(props);
+      return createLightning(props as LightningFactoryProps);
     case MagicType.Meteor:
-      return createMeteor(props);
+      return createMeteor(props as MeteorFactoryProps);
     case MagicType.PoisonSwamp:
-      return createPoisonSwamp(props);
+      return createPoisonSwamp(props as PoisonSwampFactoryProps);
     default:
       console.warn(`[MagicFactory] Unknown magic type: ${type}`);
       return null;
@@ -115,8 +76,8 @@ function createFireBall(props: FireBallFactoryProps): React.ReactNode {
     type,
     startPosition,
     direction,
-    speed: MAGIC_CONSTANTS.FIREBALL.SPEED,
-    duration: MAGIC_CONSTANTS.FIREBALL.DURATION,
+    speed: MAGIC_CONFIG.FIREBALL.SPEED,
+    duration: MAGIC_CONFIG.FIREBALL.DURATION,
     onHit,
     onComplete,
     debug,
@@ -144,10 +105,10 @@ function createLaser(props: LaserFactoryProps): React.ReactNode {
     type,
     startPosition,
     direction,
-    duration: MAGIC_CONSTANTS.LASER.DURATION,
-    length: MAGIC_CONSTANTS.LASER.LENGTH,
-    thickness: MAGIC_CONSTANTS.LASER.THICKNESS,
-    hitInterval: MAGIC_CONSTANTS.LASER.HIT_INTERVAL,
+    duration: MAGIC_CONFIG.LASER.DURATION,
+    length: MAGIC_CONFIG.LASER.LENGTH,
+    thickness: MAGIC_CONFIG.LASER.THICKNESS,
+    hitInterval: MAGIC_CONFIG.LASER.HIT_INTERVAL,
     getLatestPosition,
     getLatestDirection,
     onHit,
@@ -162,10 +123,10 @@ function createLaser(props: LaserFactoryProps): React.ReactNode {
  * Lightning 마법 렌더링 함수
  */
 function createLightning(props: LightningFactoryProps): React.ReactNode {
-  const { targetPosition, onHit, onComplete, debug } = props;
+  const { type, targetPosition, onHit, onComplete, debug } = props;
 
   const lightningProps: LightningProps = {
-    type: MagicType.Lightning,
+    type,
     targetPosition,
     onHit,
     onComplete,
@@ -179,12 +140,12 @@ function createLightning(props: LightningFactoryProps): React.ReactNode {
  * Meteor 마법 렌더링 함수
  */
 function createMeteor(props: MeteorFactoryProps): React.ReactNode {
-  const { targetPosition, onHit, onComplete, debug } = props;
+  const { type, targetPosition, onHit, onComplete, debug } = props;
 
   const meteorProps: MeteorProps = {
-    type: MagicType.Meteor,
+    type,
     targetPosition,
-    count: MAGIC_CONSTANTS.METEOR.COUNT,
+    count: MAGIC_CONFIG.METEOR.COUNT,
     onHit,
     onComplete,
     debug,
@@ -197,11 +158,13 @@ function createMeteor(props: MeteorFactoryProps): React.ReactNode {
  * PoisonSwamp 마법 렌더링 함수
  */
 function createPoisonSwamp(props: PoisonSwampFactoryProps): React.ReactNode {
-  const { targetPosition, onHit, onComplete, debug } = props;
+  const { type, targetPosition, onHit, onComplete, debug } = props;
 
   const swampProps: PoisonSwampProps = {
-    type: MagicType.PoisonSwamp,
+    type,
     targetPosition,
+    duration: MAGIC_CONFIG.POISONSWAMP.DURATION,
+    hitInterval: MAGIC_CONFIG.POISONSWAMP.HIT_INTERVAL,
     onHit,
     onComplete,
     debug,
