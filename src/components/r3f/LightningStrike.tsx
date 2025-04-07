@@ -1,15 +1,23 @@
-import React, { useRef, useMemo, } from 'react';
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { Tube, Ring } from '@react-three/drei';
+import React, { useRef, useMemo, useState } from "react";
+import * as THREE from "three";
+import { useFrame } from "@react-three/fiber";
+import { Tube, Ring } from "@react-three/drei";
+import { RigidBody, BallCollider } from "@react-three/rapier";
 
 interface LightningStrikeProps {
   commonStartPosition: THREE.Vector3; // Receive the fixed start position
   targetPositions: THREE.Vector3[];
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void; // Optional callback for hit detection
+  debug?: boolean; // Show collision area for debugging
 }
 
 // Function to generate jagged points for the lightning bolt
-const createLightningPath = (start: THREE.Vector3, end: THREE.Vector3, segments = 12, jitter = 1.0): THREE.Vector3[] => {
+const createLightningPath = (
+  start: THREE.Vector3,
+  end: THREE.Vector3,
+  segments = 12,
+  jitter = 1.0
+): THREE.Vector3[] => {
   const points: THREE.Vector3[] = [];
   const direction = end.clone().sub(start);
   const length = direction.length();
@@ -19,12 +27,14 @@ const createLightningPath = (start: THREE.Vector3, end: THREE.Vector3, segments 
 
   for (let i = 1; i < segments; i++) {
     const segmentProgress = i / segments;
-    const currentPos = start.clone().add(direction.clone().multiplyScalar(length * segmentProgress));
+    const currentPos = start
+      .clone()
+      .add(direction.clone().multiplyScalar(length * segmentProgress));
     const randomJitterScale = jitter * (0.5 + Math.random() * 0.8);
     const randomOffset = new THREE.Vector3(
       (Math.random() - 0.5) * randomJitterScale,
       (Math.random() - 0.5) * randomJitterScale,
-      (Math.random() - 0.5) * randomJitterScale,
+      (Math.random() - 0.5) * randomJitterScale
     );
     const perpendicularOffset = new THREE.Vector3()
       .crossVectors(direction, randomOffset)
@@ -46,7 +56,12 @@ interface LightningSegmentProps {
   startTime: number;
 }
 
-const LightningSegment: React.FC<LightningSegmentProps> = ({ start, end, duration, startTime }) => {
+const LightningSegment: React.FC<LightningSegmentProps> = ({
+  start,
+  end,
+  duration,
+  startTime,
+}) => {
   const tubeRef = useRef<THREE.Mesh>();
   const lightRef = useRef<THREE.PointLight>();
   const branchesRef = useRef<THREE.Mesh[]>([]); // Ref array for branches
@@ -64,16 +79,29 @@ const LightningSegment: React.FC<LightningSegmentProps> = ({ start, end, duratio
 
     for (let i = 0; i < numBranches; i++) {
       // Pick a random start point along the main path (not too close to start/end)
-      const branchStartIndex = Math.floor(Math.random() * (mainPoints.length * 0.6)) + Math.floor(mainPoints.length * 0.2);
+      const branchStartIndex =
+        Math.floor(Math.random() * (mainPoints.length * 0.6)) +
+        Math.floor(mainPoints.length * 0.2);
       const branchStartPoint = mainPoints[branchStartIndex];
 
       // Create a random end point near the start point, generally moving outwards
-      const branchDirection = new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize();
+      const branchDirection = new THREE.Vector3(
+        Math.random() - 0.5,
+        Math.random() - 0.5,
+        Math.random() - 0.5
+      ).normalize();
       const branchLength = 1 + Math.random() * 2; // Shorter length for branches
-      const branchEndPoint = branchStartPoint.clone().add(branchDirection.multiplyScalar(branchLength));
+      const branchEndPoint = branchStartPoint
+        .clone()
+        .add(branchDirection.multiplyScalar(branchLength));
 
       // Create a short path for the branch
-      const branchPoints = createLightningPath(branchStartPoint, branchEndPoint, 5, 0.5); // Fewer segments, less jitter
+      const branchPoints = createLightningPath(
+        branchStartPoint,
+        branchEndPoint,
+        5,
+        0.5
+      ); // Fewer segments, less jitter
       curves.push(new THREE.CatmullRomCurve3(branchPoints));
     }
     return curves;
@@ -101,7 +129,8 @@ const LightningSegment: React.FC<LightningSegmentProps> = ({ start, end, duratio
       // Update branches
       branchesRef.current.forEach((branchTube) => {
         if (branchTube) {
-          (branchTube.material as THREE.MeshBasicMaterial).opacity = opacity * 0.6; // Branches slightly dimmer
+          (branchTube.material as THREE.MeshBasicMaterial).opacity =
+            opacity * 0.6; // Branches slightly dimmer
           (branchTube.material as THREE.MeshBasicMaterial).needsUpdate = true;
         }
       });
@@ -128,11 +157,25 @@ const LightningSegment: React.FC<LightningSegmentProps> = ({ start, end, duratio
           ref={(el) => (branchesRef.current[index] = el!)} // Assign ref to array
           args={[curve, 10, 0.01, 2, false]} // Thinner tube, fewer segments for branches
         >
-          <meshBasicMaterial color="#e0faff" transparent opacity={1} side={THREE.DoubleSide} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial
+            color="#e0faff"
+            transparent
+            opacity={1}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
         </Tube>
       ))}
       {/* Light at the end of the main bolt */}
-      <pointLight ref={lightRef} position={end} color="#ffffff" intensity={30} distance={12} decay={2.5} />
+      <pointLight
+        ref={lightRef}
+        position={end}
+        color="#ffffff"
+        intensity={30}
+        distance={12}
+        decay={2.5}
+      />
     </>
   );
 };
@@ -140,13 +183,17 @@ const LightningSegment: React.FC<LightningSegmentProps> = ({ start, end, duratio
 // --- Impact Effect Logic Inlined ---
 interface SingleImpactEffectProps {
   position: THREE.Vector3;
+  radius?: number; // Make radius configurable
 }
 
-const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({ position }) => {
+const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({
+  position,
+  radius = 3, // Default value
+}) => {
   const ringRef = useRef<THREE.Mesh>();
   const startTime = useRef(Date.now());
   const duration = 400; // milliseconds
-  const maxRadius = 3;
+  const maxRadius = radius; // Use the passed radius instead of hardcoded value
 
   useFrame(() => {
     const elapsedTime = Date.now() - startTime.current;
@@ -160,7 +207,11 @@ const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({ position }) => 
       (ringRef.current.material as THREE.MeshBasicMaterial).needsUpdate = true;
 
       // Update geometry (less efficient but works for Ring)
-      ringRef.current.geometry = new THREE.RingGeometry(currentRadius * 0.8, currentRadius, 32);
+      ringRef.current.geometry = new THREE.RingGeometry(
+        currentRadius * 0.8,
+        currentRadius,
+        32
+      );
     }
 
     if (progress >= 1) {
@@ -170,7 +221,12 @@ const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({ position }) => 
 
   return (
     // Rotate the ring to lie flat on the ground (XZ plane) and use the received position directly
-    <Ring ref={ringRef} args={[0, 0.1, 32]} position={position} rotation={[-Math.PI / 2, 0, 0]}>
+    <Ring
+      ref={ringRef}
+      args={[0, 0.1, 32]}
+      position={position}
+      rotation={[-Math.PI / 2, 0, 0]}
+    >
       <meshBasicMaterial
         color="#ffffff"
         opacity={1}
@@ -184,11 +240,95 @@ const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({ position }) => 
 };
 // --- End of Inlined Impact Effect ---
 
-export const LightningStrike: React.FC<LightningStrikeProps> = ({ commonStartPosition, targetPositions }) => {
+// Hitbox component for collision detection
+interface HitboxProps {
+  position: THREE.Vector3;
+  duration: number;
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  debug?: boolean;
+  radius: number; // Required radius parameter
+}
+
+const Hitbox: React.FC<HitboxProps> = ({
+  position,
+  duration,
+  onHit,
+  debug = false,
+  radius,
+}) => {
+  const startTime = useRef(Date.now());
+  const [destroyed, setDestroyed] = useState(false);
+  const rigidRef = useRef(null);
+
+  useFrame(() => {
+    if (destroyed) return;
+
+    const elapsedTime = Date.now() - startTime.current;
+    const progress = Math.min(elapsedTime / duration, 1);
+
+    // Remove the hitbox when the duration is over
+    if (progress >= 1) {
+      setDestroyed(true);
+    }
+  });
+
+  if (destroyed) return null;
+
+  return (
+    <RigidBody
+      ref={rigidRef}
+      type="fixed"
+      colliders={false}
+      sensor={true}
+      position={[position.x, position.y, position.z]}
+      onIntersectionEnter={(other) => {
+        const hitPosition = new THREE.Vector3(
+          position.x,
+          position.y,
+          position.z
+        );
+        onHit?.(other, hitPosition);
+      }}
+    >
+      <BallCollider args={[radius]} />
+
+      {/* Debug visualization - only visible when debug is true */}
+      {debug && (
+        <mesh>
+          <sphereGeometry args={[radius, 16, 16]} />
+          <meshBasicMaterial
+            color="#ff00ff"
+            transparent
+            opacity={0.3}
+            wireframe={true}
+          />
+        </mesh>
+      )}
+    </RigidBody>
+  );
+};
+
+export const LightningStrike: React.FC<LightningStrikeProps> = ({
+  commonStartPosition,
+  targetPositions,
+  onHit,
+  debug = false,
+}) => {
   const startTime = useRef(Date.now());
   const duration = 600; // Overall duration for the multi-strike effect
   const flashLightRef = useRef<THREE.SpotLight>(); // Keep flash light logic
   const flashDuration = 50;
+
+  // Define the effect radius to be shared by both impact effect and hitbox
+  const effectRadius = 3;
+
+  // Calculate center position of all targets
+  const centerPosition = useMemo(() => {
+    if (targetPositions.length === 0) return new THREE.Vector3(0, 0, 0);
+    return targetPositions
+      .reduce((acc, pos) => acc.clone().add(pos), new THREE.Vector3(0, 0, 0))
+      .divideScalar(targetPositions.length);
+  }, [targetPositions]);
 
   useFrame(() => {
     const elapsedTime = Date.now() - startTime.current;
@@ -208,19 +348,27 @@ export const LightningStrike: React.FC<LightningStrikeProps> = ({ commonStartPos
     <>
       {/* Initial Strobe Flash Light */}
       <spotLight
-        ref={flashLightRef} // Add ref back to spotlight
-        position={commonStartPosition} // Use the prop directly
+        ref={flashLightRef}
+        position={commonStartPosition}
         angle={Math.PI / 3}
         penumbra={0.5}
         intensity={0}
         distance={50}
         decay={2}
         color="#ffffff"
-        target-position={useMemo(() => {
-          if (targetPositions.length === 0) return new THREE.Vector3(0, 0, 0);
-          return targetPositions.reduce((acc, pos) => acc.clone().add(pos), new THREE.Vector3(0, 0, 0)).divideScalar(targetPositions.length);
-        }, [targetPositions])}
+        target-position={centerPosition}
       />
+
+      {/* Hitbox at the center of all targets */}
+      {targetPositions.length > 0 && (
+        <Hitbox
+          position={centerPosition}
+          duration={duration}
+          onHit={onHit}
+          debug={debug}
+          radius={effectRadius}
+        />
+      )}
 
       {targetPositions.map((targetPos, index) => (
         <React.Fragment key={index}>
@@ -230,8 +378,8 @@ export const LightningStrike: React.FC<LightningStrikeProps> = ({ commonStartPos
             duration={duration * (0.5 + Math.random() * 0.5)} // Randomize duration slightly
             startTime={startTime.current + index * 50} // Stagger start times
           />
-          {/* Render the inlined impact effect component */}
-          <SingleImpactEffect position={targetPos} />
+          {/* Render the inlined impact effect component with the same radius */}
+          <SingleImpactEffect position={targetPos} radius={effectRadius} />
         </React.Fragment>
       ))}
     </>
