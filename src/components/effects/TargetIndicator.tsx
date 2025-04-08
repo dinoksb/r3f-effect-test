@@ -24,9 +24,10 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
   const startTime = useRef(Date.now());
   const [destroyed, setDestroyed] = useState(false);
 
-  // 두 개의 링을 사용해 더 다이나믹한 효과
   const outerRingRef = useRef<THREE.Mesh>();
   const innerRingRef = useRef<THREE.Mesh>();
+  const rowLineRef = useRef<THREE.Mesh>();
+  const colLineRef = useRef<THREE.Mesh>();
   const innerRingScale = useRef(0);
 
   // 경고 완료 시 정리
@@ -50,22 +51,18 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
         ? (1 - progress) * 5 // 마지막 20%에서 빠르게 페이드 아웃
         : 1;
 
-    // 펄스 애니메이션
-    const pulseValue = Math.sin(elapsedMs * 0.01 * pulseSpeed) * 0.5 + 0.5;
-
-    // 점점 빠르게 깜빡이는 효과
-    const flickerValue =
-      Math.random() > 0.7 - progress * 0.4 ? 1 : 0.2 + Math.random() * 0.3;
+    // 진행도에 따라 점점 빨라지는 펄스 애니메이션
+    const pulseSpeedFactor = 1 + progress * 0.3;
+    const pulseValue =
+      Math.sin(elapsedMs * 0.01 * pulseSpeed * pulseSpeedFactor) * 0.5 + 0.5;
 
     if (outerRingRef.current) {
-      // 외부 링은 크기가 고정되어 있고 깜빡임
+      // 애니메이션 진행에 따라 외부 링이 약간 확장됨
       const material = outerRingRef.current.material as THREE.MeshBasicMaterial;
-      material.opacity = opacity * flickerValue;
-      material.color.setStyle(color);
+      material.opacity = opacity;
       material.needsUpdate = true;
 
-      // 애니메이션 진행에 따라 외부 링이 약간 확장됨
-      const scaleFactor = 1 + progress * 0.1;
+      const scaleFactor = progress <= 0.5 ? 0.7 + progress * 2 * 0.3 : 1.0;
       outerRingRef.current.scale.set(scaleFactor, scaleFactor, scaleFactor);
     }
 
@@ -73,15 +70,29 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
       // 내부 링은 펄스 효과
       const material = innerRingRef.current.material as THREE.MeshBasicMaterial;
       material.opacity = opacity * 0.7 * (1 - pulseValue * 0.5);
+      material.color.setStyle(color);
       material.needsUpdate = true;
 
-      // 내부 링 크기 변화 (펄싱 효과)
-      innerRingScale.current = 0.5 + pulseValue * 0.65;
+      // 내부 링은 외부 링의 크기를 기준으로 펄싱
+      const outerScale = progress <= 0.5 ? 0.7 + progress * 2 * 0.3 : 1.0;
+      innerRingScale.current = outerScale * (0.5 + pulseValue * 0.65);
       innerRingRef.current.scale.set(
         innerRingScale.current,
         innerRingScale.current,
         innerRingScale.current
       );
+    }
+
+    if (rowLineRef.current) {
+      const material = rowLineRef.current.material as THREE.MeshBasicMaterial;
+      material.opacity = opacity;
+      material.needsUpdate = true;
+    }
+
+    if (colLineRef.current) {
+      const material = colLineRef.current.material as THREE.MeshBasicMaterial;
+      material.opacity = opacity;
+      material.needsUpdate = true;
     }
   });
 
@@ -90,7 +101,7 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
   // Y 좌표는 바닥에 딱 붙게 약간 올려줌 (z-fighting 방지)
   const adjustedPosition = new THREE.Vector3(
     position.x,
-    position.y + 0.01, // 바닥보다 살짝 위에 배치
+    position.y + 0.01,
     position.z
   );
 
@@ -126,7 +137,7 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
       {/* 중앙 십자선 표시 */}
       <group>
         {/* 가로선 */}
-        <mesh>
+        <mesh ref={rowLineRef}>
           <boxGeometry args={[radius * 0.5, radius * 0.05, 0.01]} />
           <meshBasicMaterial
             color={color}
@@ -138,7 +149,7 @@ export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
         </mesh>
 
         {/* 세로선 */}
-        <mesh>
+        <mesh ref={colLineRef}>
           <boxGeometry args={[radius * 0.05, radius * 0.5, 0.01]} />
           <meshBasicMaterial
             color={color}

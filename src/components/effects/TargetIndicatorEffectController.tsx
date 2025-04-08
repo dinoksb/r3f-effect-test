@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import * as THREE from "three";
 import { TargetIndicator } from "./TargetIndicator";
 
 interface TargetIndicatorEffectProps {
   targetPosition: THREE.Vector3;
-  indicatorDuration?: number;
-  impactDelay?: number;
-  onImpact?: () => void;
+  radius?: number;
+  duration?: number;
+  onComplete?: () => void;
 }
 
 /**
@@ -16,43 +16,28 @@ interface TargetIndicatorEffectProps {
  */
 export const TargetIndicatorEffectController: React.FC<
   TargetIndicatorEffectProps
-> = ({
-  targetPosition,
-  indicatorDuration = 1500, // 기본 1.5초 동안 인디케이터 표시
-  impactDelay = 2000, // 기본 2초 후에 임팩트
-  onImpact,
-}) => {
-  const [showIndicator, setShowIndicator] = useState(true);
-
-  // 인디케이터 표시 후 임팩트 효과 실행
+> = ({ targetPosition, duration = 3000, onComplete, radius = 5 }) => {
   useEffect(() => {
-    // 인디케이터 표시 종료
-    const indicatorTimer = setTimeout(() => {
-      setShowIndicator(false);
-    }, indicatorDuration);
-
-    // 임팩트 효과 실행
-    const impactTimer = setTimeout(() => {
-      onImpact?.();
-    }, impactDelay);
+    const timer = setTimeout(() => {
+      onComplete?.();
+    }, duration);
 
     return () => {
-      clearTimeout(indicatorTimer);
-      clearTimeout(impactTimer);
+      clearTimeout(timer);
     };
-  }, [indicatorDuration, impactDelay, onImpact]);
+  }, [duration, onComplete]);
 
   return (
     <>
-      {showIndicator && (
+      {
         <TargetIndicator
           position={targetPosition}
-          radius={2}
-          color="#ff3300"
-          duration={indicatorDuration}
-          pulseSpeed={1}
+          radius={radius}
+          color="#ff2200"
+          duration={duration}
+          pulseSpeed={1.5}
         />
-      )}
+      }
     </>
   );
 };
