@@ -19,6 +19,7 @@ interface ActiveEffect {
   direction: THREE.Vector3;
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
+  size?: number;
   sourceRef?: React.RefObject<PlayerRef>;
 }
 
@@ -172,6 +173,7 @@ export function Experience() {
               startPosition={effect.startPosition}
               direction={effect.direction}
               targetPosition={effect.targetPosition}
+              size={effect.size}
               getLatestPosition={getPlayerPosition}
               getLatestDirection={getPlayerDirection}
               onHit={handleEffectHit}

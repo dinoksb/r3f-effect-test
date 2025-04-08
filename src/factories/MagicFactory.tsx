@@ -24,6 +24,7 @@ import { PoisonSwampEffectController } from "../components/effects/PoisonSwampEf
  */
 const MAGIC_CONFIG = {
   FIREBALL: {
+    RADIUS: 0.5,
     SPEED: 10,
     DURATION: 2000,
   },
@@ -91,6 +92,7 @@ function createFireBall(props: FireBallFactoryProps): React.ReactNode {
     direction,
     speed: MAGIC_CONFIG.FIREBALL.SPEED,
     duration: MAGIC_CONFIG.FIREBALL.DURATION,
+    radius: MAGIC_CONFIG.FIREBALL.RADIUS, // 사용자 지정 크기 또는 기본값 사용
     onHit,
     onComplete,
     debug,

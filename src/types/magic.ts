@@ -55,6 +55,7 @@ export interface FireBallProps extends DirectionalMagicProps {
   type: MagicType.FireBall;
   speed: number;
   duration: number;
+  radius?: number;
 }
 
 // Laser 마법 Props
@@ -105,6 +106,7 @@ export interface PoisonSwampProps extends TargetPositionMagicProps {
 export interface DirectionalMagicFactoryProps extends BaseMagicFactoryProps {
   startPosition: THREE.Vector3;
   direction: THREE.Vector3;
+  size?: number;
 }
 
 // 위치 타겟팅 마법(Lightning, Meteor, PoisonSwamp)의 Factory Props

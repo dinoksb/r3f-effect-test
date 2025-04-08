@@ -1,11 +1,18 @@
-import React, { useRef, useMemo, forwardRef, useImperativeHandle } from 'react';
-import * as THREE from 'three';
-import { useKeyboardControls } from '@react-three/drei';
-import { useFrame } from '@react-three/fiber';
-import { CharacterState } from '../../constants/character';
-import { Box3, Vector3 } from 'three';
-import { AnimationConfigMap, CharacterResource, ControllerHandle } from 'vibe-starter-3d';
-import { CharacterRenderer, CharacterRendererRef } from 'vibe-starter-3d/dist/src/components/renderers/CharacterRenderer';
+import React, { useRef, useMemo, forwardRef, useImperativeHandle } from "react";
+import * as THREE from "three";
+import { useKeyboardControls } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { CharacterState } from "../../constants/character";
+import { Box3, Vector3 } from "three";
+import {
+  AnimationConfigMap,
+  CharacterResource,
+  ControllerHandle,
+} from "vibe-starter-3d";
+import {
+  CharacterRenderer,
+  CharacterRendererRef,
+} from "vibe-starter-3d/dist/src/components/renderers/CharacterRenderer";
 
 /**
  * Player input parameters for action determination
@@ -43,7 +50,11 @@ interface PlayerProps {
   /** Target height for the character model */
   targetHeight?: number;
   /** Callback to request magic cast */
-  onCastMagic?: (direction: THREE.Vector3, startPosition: THREE.Vector3, targetPosition: THREE.Vector3) => void;
+  onCastMagic?: (
+    direction: THREE.Vector3,
+    startPosition: THREE.Vector3,
+    targetPosition: THREE.Vector3
+  ) => void;
 }
 
 /**
@@ -52,10 +63,24 @@ interface PlayerProps {
  */
 function usePlayerStates() {
   const determinePlayerState = React.useCallback(
-    (currentState: CharacterState, { isRevive, isDying, isPunching, isHit, isJumping, isMoving, isRunning, isMagic }: PlayerInputs): CharacterState => {
+    (
+      currentState: CharacterState,
+      {
+        isRevive,
+        isDying,
+        isPunching,
+        isHit,
+        isJumping,
+        isMoving,
+        isRunning,
+        isMagic,
+      }: PlayerInputs
+    ): CharacterState => {
       // --- Highest priority checks ---
-      if (isRevive && currentState === CharacterState.DIE) return CharacterState.IDLE;
-      if (isDying || currentState === CharacterState.DIE) return CharacterState.DIE;
+      if (isRevive && currentState === CharacterState.DIE)
+        return CharacterState.IDLE;
+      if (isDying || currentState === CharacterState.DIE)
+        return CharacterState.DIE;
       if (isHit) return CharacterState.HIT; // Hit interrupts most things
 
       // --- Action triggering (only if not in a blocking state like DIE/HIT) ---
@@ -69,21 +94,33 @@ function usePlayerStates() {
       // This makes the MAGIC animation state very short lived. The visual effect continues independently.
       if (currentState === CharacterState.MAGIC) {
         if (isJumping) return CharacterState.JUMP;
-        if (isMoving) return isRunning ? CharacterState.RUN : CharacterState.WALK;
+        if (isMoving)
+          return isRunning ? CharacterState.RUN : CharacterState.WALK;
         return CharacterState.IDLE;
       }
 
       // --- Other actions (ensure they don't trigger if casting/punching/jumping etc.) ---
-      if (isPunching && currentState !== CharacterState.PUNCH && currentState !== CharacterState.JUMP) {
+      if (
+        isPunching &&
+        currentState !== CharacterState.PUNCH &&
+        currentState !== CharacterState.JUMP
+      ) {
         return CharacterState.PUNCH;
       }
-      if (isJumping && currentState !== CharacterState.JUMP && currentState !== CharacterState.PUNCH) {
+      if (
+        isJumping &&
+        currentState !== CharacterState.JUMP &&
+        currentState !== CharacterState.PUNCH
+      ) {
         return CharacterState.JUMP;
       }
 
       // --- Movement / Idle ---
       // Maintain jump/punch until animation completes (handled by usePlayerAnimations hook resetting state)
-      if (currentState === CharacterState.JUMP || currentState === CharacterState.PUNCH) {
+      if (
+        currentState === CharacterState.JUMP ||
+        currentState === CharacterState.PUNCH
+      ) {
         return currentState;
       }
       // Note: HIT state completion is also handled by usePlayerAnimations
@@ -93,18 +130,27 @@ function usePlayerStates() {
 
       if (isMoving) {
         // Don't switch to move if just finished punching/jumping this frame (wait for animation hook)
-        if (currentState !== CharacterState.PUNCH && currentState !== CharacterState.JUMP) return isRunning ? CharacterState.RUN : CharacterState.WALK;
+        if (
+          currentState !== CharacterState.PUNCH &&
+          currentState !== CharacterState.JUMP
+        )
+          return isRunning ? CharacterState.RUN : CharacterState.WALK;
       }
 
       // Default to IDLE if not moving and not in an active action state
-      if (!isMoving && currentState !== CharacterState.PUNCH && currentState !== CharacterState.JUMP && currentState !== CharacterState.HIT) {
+      if (
+        !isMoving &&
+        currentState !== CharacterState.PUNCH &&
+        currentState !== CharacterState.JUMP &&
+        currentState !== CharacterState.HIT
+      ) {
         return CharacterState.IDLE;
       }
 
       // Fallback: maintain current state if none of the above apply
       return currentState;
     },
-    [],
+    []
   );
 
   return { determinePlayerState: determinePlayerState };
@@ -113,7 +159,9 @@ function usePlayerStates() {
 /**
  * Hook for handling player animations
  */
-function usePlayerAnimations(currentStateRef: React.MutableRefObject<CharacterState>) {
+function usePlayerAnimations(
+  currentStateRef: React.MutableRefObject<CharacterState>
+) {
   const handleAnimationComplete = React.useCallback(
     (state: CharacterState) => {
       console.log(`Animation ${state} completed`);
@@ -131,52 +179,53 @@ function usePlayerAnimations(currentStateRef: React.MutableRefObject<CharacterSt
         }
       }
     },
-    [currentStateRef],
+    [currentStateRef]
   );
 
   // Animation configuration
-  const animationConfigMap: Partial<AnimationConfigMap<CharacterState>> = useMemo(
-    () => ({
-      [CharacterState.IDLE]: {
-        animationType: 'IDLE',
-        loop: true,
-      },
-      [CharacterState.WALK]: {
-        animationType: 'WALK',
-        loop: true,
-      },
-      [CharacterState.RUN]: {
-        animationType: 'RUN',
-        loop: true,
-      },
-      [CharacterState.JUMP]: {
-        animationType: 'JUMP',
-        loop: false,
-        clampWhenFinished: true,
-        onComplete: () => handleAnimationComplete(CharacterState.JUMP),
-      },
-      [CharacterState.PUNCH]: {
-        animationType: 'PUNCH',
-        loop: false,
-        clampWhenFinished: true,
-        onComplete: () => handleAnimationComplete(CharacterState.PUNCH),
-      },
-      [CharacterState.HIT]: {
-        animationType: 'HIT', // Uses 'HIT' type but will map to IDLE animation below
-        loop: false,
-        clampWhenFinished: true,
-        onComplete: () => handleAnimationComplete(CharacterState.HIT),
-      },
-      [CharacterState.DIE]: {
-        animationType: 'DIE', // Uses 'DIE' type but will map to IDLE animation below
-        loop: false,
-        duration: 0.1, // Short duration as it's just IDLE
-        clampWhenFinished: true,
-      },
-      // MAGIC animation config removed - handled by custom effect
-    }),
-    [handleAnimationComplete],
-  );
+  const animationConfigMap: Partial<AnimationConfigMap<CharacterState>> =
+    useMemo(
+      () => ({
+        [CharacterState.IDLE]: {
+          animationType: "IDLE",
+          loop: true,
+        },
+        [CharacterState.WALK]: {
+          animationType: "WALK",
+          loop: true,
+        },
+        [CharacterState.RUN]: {
+          animationType: "RUN",
+          loop: true,
+        },
+        [CharacterState.JUMP]: {
+          animationType: "JUMP",
+          loop: false,
+          clampWhenFinished: true,
+          onComplete: () => handleAnimationComplete(CharacterState.JUMP),
+        },
+        [CharacterState.PUNCH]: {
+          animationType: "PUNCH",
+          loop: false,
+          clampWhenFinished: true,
+          onComplete: () => handleAnimationComplete(CharacterState.PUNCH),
+        },
+        [CharacterState.HIT]: {
+          animationType: "HIT", // Uses 'HIT' type but will map to IDLE animation below
+          loop: false,
+          clampWhenFinished: true,
+          onComplete: () => handleAnimationComplete(CharacterState.HIT),
+        },
+        [CharacterState.DIE]: {
+          animationType: "DIE", // Uses 'DIE' type but will map to IDLE animation below
+          loop: false,
+          duration: 0.1, // Short duration as it's just IDLE
+          clampWhenFinished: true,
+        },
+        // MAGIC animation config removed - handled by custom effect
+      }),
+      [handleAnimationComplete]
+    );
 
   return { animationConfigMap };
 }
@@ -187,7 +236,15 @@ function usePlayerAnimations(currentStateRef: React.MutableRefObject<CharacterSt
  * Handles player state management, rendering, and requests magic casts via callback.
  */
 export const Player = forwardRef<PlayerRef, PlayerProps>(
-  ({ initState: initAction = CharacterState.IDLE, controllerRef, targetHeight = 1.6, onCastMagic }, ref) => {
+  (
+    {
+      initState: initAction = CharacterState.IDLE,
+      controllerRef,
+      targetHeight = 1.6,
+      onCastMagic,
+    },
+    ref
+  ) => {
     const currentStateRef = useRef<CharacterState>(initAction);
     const [, getKey] = useKeyboardControls();
     const { determinePlayerState: determinePlayerState } = usePlayerStates();
@@ -206,9 +263,9 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
           return characterRendererRef.current?.size || null;
         },
       }),
-      [],
+      []
     );
-    
+
     useFrame(() => {
       if (!controllerRef?.current?.rigidBodyRef?.current) return;
 
@@ -218,32 +275,48 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       const triggerMagic = isMagic && !magicTriggeredRef.current;
 
       if (triggerMagic) {
-        console.log('Magic key pressed - Requesting cast!');
+        console.log("Magic key pressed - Requesting cast!");
         const rigidBody = controllerRef.current.rigidBodyRef.current;
         const position = rigidBody.translation();
-        const startPosition = new THREE.Vector3(position.x, position.y, position.z);
-        
-      
-        
+        const startPosition = new THREE.Vector3(
+          position.x,
+          position.y,
+          position.z
+        );
+
         // Calculate target near player (re-enabled)
         const targetPosition = new THREE.Vector3(0, 0, 0);
-        const currentPosition = controllerRef.current.rigidBodyRef.current.translation();
+        const currentPosition =
+          controllerRef.current.rigidBodyRef.current.translation();
         currentPosition.y = 0;
         const radius = 5;
         const randomAngle = Math.random() * Math.PI * 2;
         const randomRadius = Math.random() * radius;
-        targetPosition.set(currentPosition.x + Math.cos(randomAngle) * randomRadius, 0, currentPosition.z + Math.sin(randomAngle) * randomRadius);
+        targetPosition.set(
+          currentPosition.x + Math.cos(randomAngle) * randomRadius,
+          0,
+          currentPosition.z + Math.sin(randomAngle) * randomRadius
+        );
 
-          // Forward direction = apply quaternion to (0, 0, -1)
+        // Forward direction = apply quaternion to (0, 0, -1)
         const rotation = rigidBody.rotation(); // Quaternion
-        const quaternion = new THREE.Quaternion(rotation.x, rotation.y, rotation.z, rotation.w);
-        const direction = new THREE.Vector3(0, 0, 1).applyQuaternion(quaternion).normalize();
+        const quaternion = new THREE.Quaternion(
+          rotation.x,
+          rotation.y,
+          rotation.z,
+          rotation.w
+        );
+        const direction = new THREE.Vector3(0, 0, 1)
+          .applyQuaternion(quaternion)
+          .normalize();
 
         // Call the callback provided by the parent
         if (onCastMagic) {
           onCastMagic(direction, startPosition, targetPosition);
         } else {
-          console.warn('Player tried to cast magic, but onCastMagic prop is missing!');
+          console.warn(
+            "Player tried to cast magic, but onCastMagic prop is missing!"
+          );
         }
       }
       magicTriggeredRef.current = isMagic;
@@ -251,7 +324,11 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       // Determine player state
       const rigidBody = controllerRef.current.rigidBodyRef.current;
       const currentVel = rigidBody?.linvel?.() || { y: 0 };
-      const isMoving = inputs.forward || inputs.backward || inputs.leftward || inputs.rightward;
+      const isMoving =
+        inputs.forward ||
+        inputs.backward ||
+        inputs.leftward ||
+        inputs.rightward;
       const newState = determinePlayerState(currentStateRef.current, {
         isRevive: inputs.action4,
         isDying: inputs.action3,
@@ -264,7 +341,9 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
         currentVelY: currentVel.y,
       });
       if (newState !== currentStateRef.current) {
-        console.log(`State changed from ${currentStateRef.current} to ${newState}`);
+        console.log(
+          `State changed from ${currentStateRef.current} to ${newState}`
+        );
       }
       currentStateRef.current = newState;
     });
@@ -272,21 +351,22 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
     // Define the character resource with all animations
     const characterResource: CharacterResource = useMemo(
       () => ({
-        name: 'Default Character',
-        url: 'https://agent8-games.verse8.io/assets/3d/characters/human/space-marine.glb',
+        name: "Default Character",
+        url: "https://agent8-games.verse8.io/assets/3d/characters/human/space-marine.glb",
         animations: {
-          IDLE: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/idle.glb',
-          WALK: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/walk.glb',
-          RUN: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/run.glb',
-          JUMP: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/jump-up.glb',
-          PUNCH: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/punch.glb',
-          HIT: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/idle.glb', // Use IDLE for HIT
-          DIE: 'https://agent8-games.verse8.io/assets/3d/animations/mixamorig/idle.glb', // Use IDLE for DIE
+          IDLE: "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/idle.glb",
+          WALK: "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/walk.glb",
+          RUN: "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/run.glb",
+          JUMP: "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/jump-up.glb",
+          PUNCH:
+            "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/punch.glb",
+          HIT: "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/idle.glb", // Use IDLE for HIT
+          DIE: "https://agent8-games.verse8.io/assets/3d/animations/mixamorig/idle.glb", // Use IDLE for DIE
           // MAGIC animation URL removed
         },
         animationConfigMap: animationConfigMap,
       }),
-      [animationConfigMap],
+      [animationConfigMap]
     );
 
     return (
@@ -300,5 +380,5 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
         />
       </>
     );
-  },
+  }
 );

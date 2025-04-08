@@ -9,6 +9,7 @@ export const FireBall: React.FC<FireBallProps> = ({
   direction,
   speed,
   duration,
+  radius = 1, // 기본 크기 비율 추가 (기본값 1)
   onHit,
   onComplete,
 }) => {
@@ -29,6 +30,13 @@ export const FireBall: React.FC<FireBallProps> = ({
 
   // 처음 몇 프레임 건너뛴 뒤 Trail을 보여주도록
   const frameCountRef = useRef(0);
+
+  // 크기 관련 상수 계산
+  const outerRadius = radius;
+  const coreRadius = 0.9 * radius;
+  const colliderRadius = radius;
+  const lightDistance = 8 * radius;
+  const lightIntensityBase = 5 * radius;
 
   // 매 프레임마다 kinematic RigidBody의 위치와 이펙트를 업데이트
   useFrame(() => {
@@ -86,7 +94,10 @@ export const FireBall: React.FC<FireBallProps> = ({
     // Light intensity
     if (lightRef.current) {
       lightRef.current.intensity =
-        (5 + Math.sin(elapsed * 0.03) * 2 + Math.random()) * opacityFactor;
+        (lightIntensityBase +
+          Math.sin(elapsed * 0.03) * 2 * radius +
+          Math.random()) *
+        opacityFactor;
     }
 
     // 수명이 끝나면 소멸
@@ -122,11 +133,11 @@ export const FireBall: React.FC<FireBallProps> = ({
       gravityScale={0}
     >
       {/* FireBall 충돌용 컬라이더 (반지름=0.4) */}
-      <BallCollider args={[0.4]} />
+      <BallCollider args={[colliderRadius]} />
 
       {/* 불꽃 외피 */}
       <mesh ref={outerRef}>
-        <sphereGeometry args={[0.4, 16, 16]} />
+        <sphereGeometry args={[outerRadius, 16, 16]} />
         <meshBasicMaterial
           color="#ff3300"
           transparent
@@ -139,7 +150,7 @@ export const FireBall: React.FC<FireBallProps> = ({
 
       {/* 중심 코어 */}
       <mesh ref={coreRef}>
-        <sphereGeometry args={[0.3, 16, 16]} />
+        <sphereGeometry args={[coreRadius, 16, 16]} />
         <meshBasicMaterial
           color="#ffffcc"
           transparent
@@ -154,8 +165,8 @@ export const FireBall: React.FC<FireBallProps> = ({
       <pointLight
         ref={lightRef}
         color="#ff6600"
-        intensity={5}
-        distance={8}
+        intensity={lightIntensityBase}
+        distance={lightDistance}
         decay={2}
       />
 

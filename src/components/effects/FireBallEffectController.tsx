@@ -10,6 +10,7 @@ export const FireBallEffectController: React.FC<FireBallProps> = ({
   speed,
   duration,
   direction,
+  radius = 1,
   onHit,
   onComplete,
   debug = false,
@@ -22,7 +23,7 @@ export const FireBallEffectController: React.FC<FireBallProps> = ({
   // TODO: 추후 삭제 예정
   const caclcStartPosition = startPosition
     .clone()
-    .add(direction.clone().multiplyScalar(1));
+    .add(direction.clone().multiplyScalar(1 + radius));
 
   const handleExplosionFinish = useCallback(
     (key: number) => {
@@ -58,6 +59,7 @@ export const FireBallEffectController: React.FC<FireBallProps> = ({
         direction={direction}
         speed={speed}
         duration={duration}
+        radius={radius}
         onHit={handleFireBallHit}
         onComplete={onComplete}
         debug={debug}
@@ -67,7 +69,7 @@ export const FireBallEffectController: React.FC<FireBallProps> = ({
         <Explosion
           key={ex.key}
           position={ex.pos}
-          scale={0.5}
+          scale={radius * 0.6}
           onComplete={() => handleExplosionFinish(ex.key)}
         />
       ))}
