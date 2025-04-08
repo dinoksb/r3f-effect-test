@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Ring } from "@react-three/drei";
 
-interface TargetIndicatorProps {
+interface AreaIndicatorProps {
   position: THREE.Vector3;
   radius?: number;
   color?: string;
@@ -14,7 +14,7 @@ interface TargetIndicatorProps {
 /**
  * 메테오가 떨어질 위치를 바닥에 표시하는 이펙트 컴포넌트
  */
-export const TargetIndicator: React.FC<TargetIndicatorProps> = ({
+export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
   position,
   radius = 2,
   color = "#ff3300",

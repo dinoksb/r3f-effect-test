@@ -11,7 +11,7 @@ import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { MagicFactory } from "../../factories/MagicFactory";
 import { MagicType } from "../../types/magic";
 import React from "react";
-import { TargetIndicatorEffectController } from "../effects/TargetIndicatorEffectController";
+import { AreaIndicatorEffectController } from "../effects/AreaIndicatorEffectController";
 
 interface ActiveEffect {
   key: number;
@@ -179,7 +179,7 @@ export function Experience() {
               onHit={handleEffectHit}
               onComplete={() => handleMagicEffectComplete(effect.key)}
             />
-            <TargetIndicatorEffectController
+            <AreaIndicatorEffectController
               key={`targeting-${effect.key}`}
               duration={3000}
               radius={3}
