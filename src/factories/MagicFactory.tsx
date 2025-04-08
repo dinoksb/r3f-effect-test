@@ -35,7 +35,7 @@ const MAGIC_CONFIG = {
   },
   METEOR: {
     DURATION: 2000,
-    COUNT: 10,
+    COUNT: 1,
     SPREAD: 10,
     RAY_ORIGIN_Y_OFFSET: 20,
   },

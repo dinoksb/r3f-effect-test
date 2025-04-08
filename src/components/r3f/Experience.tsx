@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { MagicFactory } from "../../factories/MagicFactory";
 import { MagicType } from "../../types/magic";
+import React from "react";
 
 interface ActiveEffect {
   key: number;
@@ -169,7 +170,7 @@ export function Experience() {
             type={effect.type}
             startPosition={effect.startPosition}
             direction={effect.direction}
-            targetPosition={effect.targetPosition}
+            targetPosition={new THREE.Vector3(0, 0, 0)}
             getLatestPosition={getPlayerPosition}
             getLatestDirection={getPlayerDirection}
             onHit={handleEffectHit}
