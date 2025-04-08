@@ -34,8 +34,9 @@ const MAGIC_CONFIG = {
     HIT_INTERVAL: 500,
   },
   METEOR: {
-    DURATION: 2000,
+    DURATION: 3000,
     COUNT: 1,
+    RADIUS: 3,
     SPREAD: 10,
     RAY_ORIGIN_Y_OFFSET: 20,
   },
@@ -162,6 +163,7 @@ function createMeteor(props: MeteorFactoryProps): React.ReactNode {
     type,
     targetPosition,
     count: MAGIC_CONFIG.METEOR.COUNT,
+    radius: MAGIC_CONFIG.METEOR.RADIUS,
     duration: MAGIC_CONFIG.METEOR.DURATION,
     spread: MAGIC_CONFIG.METEOR.SPREAD,
     rayOriginYOffset: MAGIC_CONFIG.METEOR.RAY_ORIGIN_Y_OFFSET,

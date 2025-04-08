@@ -81,6 +81,7 @@ export interface LightningProps extends TargetPositionMagicProps {
 export interface MeteorProps extends TargetPositionMagicProps {
   type: MagicType.Meteor;
   count: number;
+  radius: number;
   duration: number;
   spread: number;
   rayOriginYOffset: number;

@@ -11,6 +11,7 @@ import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { MagicFactory } from "../../factories/MagicFactory";
 import { MagicType } from "../../types/magic";
 import React from "react";
+import { TargetIndicatorEffectController } from "../effects/TargetIndicatorEffectController";
 
 interface ActiveEffect {
   key: number;
@@ -165,17 +166,24 @@ export function Experience() {
         <Floor />
 
         {activeEffects.map((effect) => (
-          <MagicFactory
-            key={effect.key}
-            type={effect.type}
-            startPosition={effect.startPosition}
-            direction={effect.direction}
-            targetPosition={new THREE.Vector3(0, 0, 0)}
-            getLatestPosition={getPlayerPosition}
-            getLatestDirection={getPlayerDirection}
-            onHit={handleEffectHit}
-            onComplete={() => handleMagicEffectComplete(effect.key)}
-          />
+          <React.Fragment key={effect.key}>
+            <MagicFactory
+              type={effect.type}
+              startPosition={effect.startPosition}
+              direction={effect.direction}
+              targetPosition={effect.targetPosition}
+              getLatestPosition={getPlayerPosition}
+              getLatestDirection={getPlayerDirection}
+              onHit={handleEffectHit}
+              onComplete={() => handleMagicEffectComplete(effect.key)}
+            />
+            <TargetIndicatorEffectController
+              key={`targeting-${effect.key}`}
+              duration={3000}
+              radius={3}
+              targetPosition={effect.targetPosition}
+            />
+          </React.Fragment>
         ))}
       </Physics>
     </>

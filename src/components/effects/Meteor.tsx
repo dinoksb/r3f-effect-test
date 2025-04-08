@@ -12,10 +12,7 @@ interface ImpactEffectProps {
   radius?: number; // Make radius configurable
 }
 
-const ImpactEffect: React.FC<ImpactEffectProps> = ({
-  position,
-  radius = 5, // Default value
-}) => {
+const ImpactEffect: React.FC<ImpactEffectProps> = ({ position, radius }) => {
   const sphereRef = useRef<THREE.Mesh>();
   const lightRef = useRef<THREE.PointLight>();
   const startTime = useRef(Date.now());
@@ -139,6 +136,7 @@ const Hitbox: React.FC<HitboxProps> = ({
 interface SingleMeteorProps {
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
+  radius: number;
   duration: number;
   startDelay: number;
   onHit: HitCallback;
@@ -149,6 +147,7 @@ interface SingleMeteorProps {
 const SingleMeteor: React.FC<SingleMeteorProps> = ({
   startPosition,
   targetPosition,
+  radius,
   duration,
   startDelay,
   onHit,
@@ -165,8 +164,14 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
   const [meteorActive, setMeteorActive] = useState(startDelay === 0);
 
   // Define a shared impact radius for both visual effect and collision
-  const impactRadius = 5;
+  const impactRadius = radius;
   const impactDuration = 600; // milliseconds
+
+  const meteorSize = impactRadius * 0.9; // 40% of impact radius for visual meteor
+  const emberSize = meteorSize * 0.7; // 50% of meteor size for the ember
+
+  const trailWidth = radius * 2.0; // Scale trail width with radius
+  const trailLength = radius * 0.6; // Scale trail length with radius
 
   const direction = useMemo(() => {
     return targetPosition.clone().sub(startPosition);
@@ -239,7 +244,7 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
       {!showImpact && (
         <>
           <mesh ref={meteorRef} position={startPosition.clone()}>
-            <dodecahedronGeometry args={[2, 0]} />
+            <dodecahedronGeometry args={[meteorSize, 0]} />
             <meshBasicMaterial
               color="#ff4400"
               transparent
@@ -251,7 +256,7 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
           </mesh>
 
           <mesh ref={emberRef} position={startPosition.clone()}>
-            <dodecahedronGeometry args={[1, 0]} />
+            <dodecahedronGeometry args={[emberSize, 0]} />
             <meshBasicMaterial
               color="#ffff00"
               transparent
@@ -272,8 +277,8 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
           />
 
           <Trail
-            width={5}
-            length={2}
+            width={trailWidth}
+            length={trailLength}
             color={new THREE.Color("#ff6600")}
             attenuation={(w) => w}
             target={emberRef}
@@ -304,6 +309,7 @@ interface InternalMeteorProps {
   startPosition: THREE.Vector3;
   targetPositions: THREE.Vector3[];
   duration: number;
+  radius: number;
   onHit: HitCallback;
   onComplete: CompleteCallback;
   debug: boolean;
@@ -312,6 +318,7 @@ export const Meteor: React.FC<InternalMeteorProps> = ({
   startPosition,
   targetPositions,
   duration,
+  radius,
   onHit,
   onComplete,
   debug = false,
@@ -333,6 +340,7 @@ export const Meteor: React.FC<InternalMeteorProps> = ({
           startPosition={startPosition}
           targetPosition={targetPos}
           duration={duration}
+          radius={radius}
           startDelay={100 * index + Math.random() * 100} // Stagger the meteors
           onHit={onHit}
           onComplete={() => setImpactCount((prev) => prev + 1)}

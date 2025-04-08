@@ -9,6 +9,7 @@ export const MeteorEffectController: React.FC<MeteorProps> = ({
   targetPosition,
   count,
   duration,
+  radius,
   spread,
   rayOriginYOffset,
   onHit,
@@ -100,6 +101,7 @@ export const MeteorEffectController: React.FC<MeteorProps> = ({
     <Meteor
       startPosition={calculatedStartPosition}
       targetPositions={targetPositions}
+      radius={radius}
       duration={duration}
       onHit={onHit}
       onComplete={onComplete}
