@@ -10,6 +10,7 @@ import * as THREE from "three";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { MagicFactory } from "../../factories/MagicFactory";
 import { MagicType } from "../../types/magic";
+import { TargetIndicatorEffectController } from "../effects/TargetIndicatorEffectController";
 
 interface ActiveEffect {
   key: number;
@@ -164,17 +165,21 @@ export function Experience() {
         <Floor />
 
         {activeEffects.map((effect) => (
-          <MagicFactory
-            key={effect.key}
-            type={effect.type}
-            startPosition={effect.startPosition}
-            direction={effect.direction}
+          <TargetIndicatorEffectController
             targetPosition={effect.targetPosition}
-            getLatestPosition={getPlayerPosition}
-            getLatestDirection={getPlayerDirection}
-            onHit={handleEffectHit}
-            onComplete={() => handleMagicEffectComplete(effect.key)}
+            onImpact={() => handleMagicEffectComplete(effect.key)}
           />
+          // <MagicFactory
+          //   key={effect.key}
+          //   type={effect.type}
+          //   startPosition={effect.startPosition}
+          //   direction={effect.direction}
+          //   targetPosition={effect.targetPosition}
+          //   getLatestPosition={getPlayerPosition}
+          //   getLatestDirection={getPlayerDirection}
+          //   onHit={handleEffectHit}
+          //   onComplete={() => handleMagicEffectComplete(effect.key)}
+          // />
         ))}
       </Physics>
     </>

@@ -5,6 +5,7 @@ import { Sphere, Trail } from "@react-three/drei";
 import { Explosion } from "./Explosion";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { CompleteCallback, HitCallback } from "../../types/magic";
+import { TargetIndicator } from "./TargetIndicator";
 
 // Component for the impact effect when the fireball hits the target
 interface ImpactEffectProps {
@@ -164,9 +165,26 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
   const [impactDone, setImpactDone] = useState(false);
   const [meteorActive, setMeteorActive] = useState(startDelay === 0);
 
+  // 타겟 인디케이터 표시 제어를 위한 상태
+  const [showTargetIndicator, setShowTargetIndicator] = useState(true);
+
   // Define a shared impact radius for both visual effect and collision
   const impactRadius = 5;
   const impactDuration = 600; // milliseconds
+
+  // 인디케이터 지속 시간 - 첫 소멸은 startDelay의 75%쯤에 발생
+  const indicatorDuration = Math.max(startDelay * 0.75, 500);
+
+  // 인디케이터 제거를 위한 타이머 설정
+  useEffect(() => {
+    if (!showTargetIndicator) return;
+
+    const timer = setTimeout(() => {
+      setShowTargetIndicator(false);
+    }, indicatorDuration);
+
+    return () => clearTimeout(timer);
+  }, [indicatorDuration]);
 
   const direction = useMemo(() => {
     return targetPosition.clone().sub(startPosition);
@@ -235,6 +253,17 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
 
   return (
     <>
+      {/* 타겟 인디케이터 */}
+      {showTargetIndicator && (
+        <TargetIndicator
+          position={targetPosition}
+          radius={impactRadius * 0.7} // 히트박스보다 약간 작게
+          color="#ff4400" // 메테오 색상과 일치
+          duration={indicatorDuration}
+          pulseSpeed={2}
+        />
+      )}
+
       {/* Main meteor using dodecahedron as requested */}
       {!showImpact && (
         <>
