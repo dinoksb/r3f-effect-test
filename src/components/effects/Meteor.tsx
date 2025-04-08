@@ -5,7 +5,6 @@ import { Sphere, Trail } from "@react-three/drei";
 import { Explosion } from "./Explosion";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { CompleteCallback, HitCallback } from "../../types/magic";
-import { TargetIndicator } from "./TargetIndicator";
 
 // Component for the impact effect when the fireball hits the target
 interface ImpactEffectProps {
@@ -15,7 +14,7 @@ interface ImpactEffectProps {
 
 const ImpactEffect: React.FC<ImpactEffectProps> = ({
   position,
-  radius = 5, // Default value
+  radius, // Default value
 }) => {
   const sphereRef = useRef<THREE.Mesh>();
   const lightRef = useRef<THREE.PointLight>();
@@ -140,6 +139,7 @@ const Hitbox: React.FC<HitboxProps> = ({
 interface SingleMeteorProps {
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
+  radius: number;
   duration: number;
   startDelay: number;
   onHit: HitCallback;
@@ -147,9 +147,10 @@ interface SingleMeteorProps {
   debug: boolean;
 }
 
-const SingleMeteor: React.FC<SingleMeteorProps> = ({
+export const SingleMeteor: React.FC<SingleMeteorProps> = ({
   startPosition,
   targetPosition,
+  radius,
   duration,
   startDelay,
   onHit,
@@ -165,26 +166,18 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
   const [impactDone, setImpactDone] = useState(false);
   const [meteorActive, setMeteorActive] = useState(startDelay === 0);
 
-  // 타겟 인디케이터 표시 제어를 위한 상태
-  const [showTargetIndicator, setShowTargetIndicator] = useState(true);
-
   // Define a shared impact radius for both visual effect and collision
-  const impactRadius = 5;
+  const impactRadius = radius;
+  // Make meteor size match the impact radius
+  const meteorSize = impactRadius * 0.9; // 40% of impact radius for visual meteor
+  const emberSize = meteorSize * 0.7; // 50% of meteor size for the ember
   const impactDuration = 600; // milliseconds
 
-  // 인디케이터 지속 시간 - 첫 소멸은 startDelay의 75%쯤에 발생
-  const indicatorDuration = Math.max(startDelay * 0.75, 500);
-
-  // 인디케이터 제거를 위한 타이머 설정
-  useEffect(() => {
-    if (!showTargetIndicator) return;
-
-    const timer = setTimeout(() => {
-      setShowTargetIndicator(false);
-    }, indicatorDuration);
-
-    return () => clearTimeout(timer);
-  }, [indicatorDuration]);
+  // Calculate light and trail properties based on radius
+  // const lightIntensity = radius * 1.0; // Scale light intensity with radius
+  // const lightDistance = radius * 2.0; // Scale light distance with radius
+  const trailWidth = radius * 2.0; // Scale trail width with radius
+  const trailLength = radius * 0.6; // Scale trail length with radius
 
   const direction = useMemo(() => {
     return targetPosition.clone().sub(startPosition);
@@ -253,22 +246,11 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
 
   return (
     <>
-      {/* 타겟 인디케이터 */}
-      {showTargetIndicator && (
-        <TargetIndicator
-          position={targetPosition}
-          radius={impactRadius * 0.7} // 히트박스보다 약간 작게
-          color="#ff4400" // 메테오 색상과 일치
-          duration={indicatorDuration}
-          pulseSpeed={2}
-        />
-      )}
-
       {/* Main meteor using dodecahedron as requested */}
       {!showImpact && (
         <>
           <mesh ref={meteorRef} position={startPosition.clone()}>
-            <dodecahedronGeometry args={[2, 0]} />
+            <dodecahedronGeometry args={[meteorSize, 0]} />
             <meshBasicMaterial
               color="#ff4400"
               transparent
@@ -280,7 +262,7 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
           </mesh>
 
           <mesh ref={emberRef} position={startPosition.clone()}>
-            <dodecahedronGeometry args={[1, 0]} />
+            <dodecahedronGeometry args={[emberSize, 0]} />
             <meshBasicMaterial
               color="#ffff00"
               transparent
@@ -291,18 +273,18 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
             />
           </mesh>
 
-          <pointLight
+          {/* <pointLight
             ref={lightRef}
             position={startPosition.clone()}
             color="#ff6600"
             intensity={5}
-            distance={10}
+            distance={lightDistance}
             decay={2}
-          />
+          /> */}
 
           <Trail
-            width={5}
-            length={2}
+            width={trailWidth}
+            length={trailLength}
             color={new THREE.Color("#ff6600")}
             attenuation={(w) => w}
             target={emberRef}
@@ -332,6 +314,7 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
 interface InternalMeteorProps {
   startPosition: THREE.Vector3;
   targetPositions: THREE.Vector3[];
+  radius: number;
   duration: number;
   onHit: HitCallback;
   onComplete: CompleteCallback;
@@ -340,6 +323,7 @@ interface InternalMeteorProps {
 export const Meteor: React.FC<InternalMeteorProps> = ({
   startPosition,
   targetPositions,
+  radius,
   duration,
   onHit,
   onComplete,
@@ -350,6 +334,7 @@ export const Meteor: React.FC<InternalMeteorProps> = ({
   // Track when all meteors have completed
   useEffect(() => {
     if (impactCount === targetPositions.length && onComplete) {
+      console.log("Meteor complete");
       onComplete();
     }
   }, [impactCount, targetPositions.length, onComplete]);
@@ -361,6 +346,7 @@ export const Meteor: React.FC<InternalMeteorProps> = ({
           key={index}
           startPosition={startPosition}
           targetPosition={targetPos}
+          radius={radius}
           duration={duration}
           startDelay={100 * index + Math.random() * 100} // Stagger the meteors
           onHit={onHit}

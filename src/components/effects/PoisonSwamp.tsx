@@ -264,7 +264,7 @@ export const PoisonSwamp: React.FC<PoisonCloudProps> = ({
         ref={swampFloorRef}
         args={[radius, 32]}
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, (center.y += 0.001), 0]}
+        position={[0, (center.y += 0.01), 0]}
       >
         <meshBasicMaterial
           ref={swampFloorMaterialRef}

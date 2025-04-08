@@ -11,6 +11,7 @@ import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { MagicFactory } from "../../factories/MagicFactory";
 import { MagicType } from "../../types/magic";
 import { TargetIndicatorEffectController } from "../effects/TargetIndicatorEffectController";
+import { MeteorEffectController } from "../effects/MeteorEffectController";
 
 interface ActiveEffect {
   key: number;
@@ -21,16 +22,25 @@ interface ActiveEffect {
   sourceRef?: React.RefObject<PlayerRef>;
 }
 
+interface TargetIndicatorEffect {
+  key: number;
+  targetPosition: THREE.Vector3;
+}
+
 export function Experience() {
   const controllerRef = useRef<ControllerHandle>(null);
   const playerRef = useRef<PlayerRef>(null);
   const targetHeight = 1.6;
 
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
+  const [targetIndicatorEffects, setTargetIndicatorEffects] = useState<
+    TargetIndicatorEffect[]
+  >([]);
   const [selectedMagic, setSelectedMagic] = useState<MagicType>(
     MagicType.FireBall
   );
   const effectKeyCounter = useRef(0);
+  const targetIndicatorKeyCounter = useRef(5000);
 
   const [pausedPhysics, setPausedPhysics] = useState(true);
   useEffect(() => {
@@ -72,6 +82,15 @@ export function Experience() {
           sourceRef: playerRef,
         },
       ]);
+
+      const newTargetIndicatorKey = targetIndicatorKeyCounter.current++;
+      setTargetIndicatorEffects((prev) => [
+        ...prev,
+        {
+          key: newTargetIndicatorKey,
+          targetPosition,
+        },
+      ]);
     },
     []
   );
@@ -82,6 +101,16 @@ export function Experience() {
       prevEffects.filter((effect) => effect.key !== keyToRemove)
     );
   }, []);
+
+  const handleTargetIndicatorEffectComplete = useCallback(
+    (keyToRemove: number) => {
+      console.log("Experience complete target indicator effect", keyToRemove);
+      setTargetIndicatorEffects((prevEffects) =>
+        prevEffects.filter((effect) => effect.key !== keyToRemove)
+      );
+    },
+    []
+  );
 
   const handleEffectHit = useCallback((other: unknown, pos: THREE.Vector3) => {
     console.log("Experience hit effect", other, pos);
@@ -118,7 +147,7 @@ export function Experience() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [activeEffects]);
 
   return (
     <>
@@ -160,15 +189,42 @@ export function Experience() {
             />
           </FreeViewController>
         </KeyboardControls>
-
         <RandomBoxes count={20} range={10} />
         <Floor />
-
         {activeEffects.map((effect) => (
-          <TargetIndicatorEffectController
-            targetPosition={effect.targetPosition}
-            onImpact={() => handleMagicEffectComplete(effect.key)}
-          />
+          <>
+            <MeteorEffectController
+              key={effect.key}
+              radius={2}
+              type={MagicType.Meteor}
+              count={1}
+              duration={2500}
+              spread={10}
+              rayOriginYOffset={15}
+              targetPosition={effect.targetPosition}
+              startPosition={
+                new THREE.Vector3(
+                  effect.targetPosition.x,
+                  effect.targetPosition.y + 15,
+                  effect.targetPosition.z - 15
+                )
+              }
+              onHit={handleEffectHit}
+              onComplete={() => handleMagicEffectComplete(effect.key)}
+            />
+
+            <TargetIndicatorEffectController
+              key={targetIndicatorKeyCounter.current}
+              duration={2500}
+              radius={2}
+              targetPosition={effect.targetPosition}
+              onComplete={() =>
+                handleTargetIndicatorEffectComplete(
+                  targetIndicatorKeyCounter.current
+                )
+              }
+            />
+          </>
           // <MagicFactory
           //   key={effect.key}
           //   type={effect.type}
@@ -181,6 +237,18 @@ export function Experience() {
           //   onComplete={() => handleMagicEffectComplete(effect.key)}
           // />
         ))}
+        {/* <TargetIndicatorEffectController
+          key={effectKeyCounter.current}
+          duration={2500}
+          radius={2}
+          targetPosition={
+            activeEffects.length > 0
+              ? activeEffects[activeEffects.length - 1].targetPosition
+              : new THREE.Vector3(0, 0, 0)
+          }
+          onComplete={() => handleMagicEffectComplete(effectKeyCounter.current)}
+        /> */}
+        ;
       </Physics>
     </>
   );

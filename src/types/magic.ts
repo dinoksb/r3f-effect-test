@@ -80,7 +80,9 @@ export interface LightningProps extends TargetPositionMagicProps {
 // Meteor 마법 Props
 export interface MeteorProps extends TargetPositionMagicProps {
   type: MagicType.Meteor;
+  startPosition: THREE.Vector3;
   count: number;
+  radius: number;
   duration: number;
   spread: number;
   rayOriginYOffset: number;
