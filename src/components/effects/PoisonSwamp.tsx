@@ -9,21 +9,21 @@ import {
   IntersectionEnterHandler,
   IntersectionExitHandler,
 } from "@react-three/rapier";
-import { CompleteCallback, HitCallback } from "../../types/magic";
+import { PoisonSwampEffectProps } from "./PoisonSwampEffectController";
 
-interface PoisonCloudProps {
-  center: THREE.Vector3;
-  duration: number;
-  fadeOutDuration?: number;
-  radius?: number;
-  height?: number;
-  opacity?: number;
-  particleCount?: number;
-  hitInterval?: number;
-  onComplete: CompleteCallback;
-  onHit: HitCallback;
-  debug: boolean;
-}
+// interface PoisonCloudProps {
+//   center: THREE.Vector3;
+//   duration: number;
+//   fadeOutDuration?: number;
+//   radius?: number;
+//   height?: number;
+//   opacity?: number;
+//   particleCount?: number;
+//   hitInterval?: number;
+//   onComplete: CompleteCallback;
+//   onHit: HitCallback;
+//   debug: boolean;
+// }
 
 interface BubbleParticle {
   position: THREE.Vector3;
@@ -76,10 +76,9 @@ function createBubbleParticles(
   return particles;
 }
 
-export const PoisonSwamp: React.FC<PoisonCloudProps> = ({
-  center,
+export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
+  targetPosition,
   duration = 2000,
-  fadeOutDuration = 1000,
   onComplete: onFinish,
   radius = 5,
   height = -0.5,
@@ -92,9 +91,13 @@ export const PoisonSwamp: React.FC<PoisonCloudProps> = ({
   const startTime = useRef(performance.now());
   const finishCalled = useRef(false);
   const particleCount = useMemo(() => radius * 100, [radius]);
-  const calcHeight = useMemo(() => center.y + height, [center, height]);
+  const calcHeight = useMemo(
+    () => targetPosition.y + height,
+    [targetPosition, height]
+  );
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const cylinderRef = useRef<THREE.Mesh>(null);
+  const fadeOutDuration = useMemo(() => duration * 0.5, [duration]);
 
   const collisionState = useRef({
     lastHitTime: 0,
@@ -127,7 +130,7 @@ export const PoisonSwamp: React.FC<PoisonCloudProps> = ({
 
     if (now - state.lastHitTime >= hitInterval && onHit) {
       state.lastHitTime = now;
-      onHit(other, center);
+      onHit(other, targetPosition);
     }
   };
 
@@ -193,7 +196,7 @@ export const PoisonSwamp: React.FC<PoisonCloudProps> = ({
       state.collidingObjects.size > 0 && now - state.lastHitTime >= hitInterval;
     if (canHit && onHit) {
       state.lastHitTime = now;
-      state.collidingObjects.forEach((obj) => onHit(obj, center));
+      state.collidingObjects.forEach((obj) => onHit(obj, targetPosition));
     }
     if (fadeOutProgress > 0.5) state.collidingObjects.clear();
 
@@ -259,12 +262,12 @@ export const PoisonSwamp: React.FC<PoisonCloudProps> = ({
   const safeHeight = Math.max(Math.abs(calcHeight), calcHeight * 1.2);
 
   return (
-    <group name="poison-swamp" ref={groupRef} position={center}>
+    <group name="poison-swamp" ref={groupRef} position={targetPosition}>
       <Circle
         ref={swampFloorRef}
         args={[radius, 32]}
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, (center.y += 0.001), 0]}
+        position={[0, (targetPosition.y += 0.001), 0]}
       >
         <meshBasicMaterial
           ref={swampFloorMaterialRef}

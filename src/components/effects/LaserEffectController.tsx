@@ -1,16 +1,31 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Laser } from "./Laser";
-import { LaserProps } from "../../types/magic";
+import { MagicType } from "../../types/magic";
+import * as THREE from "three";
 
-const DURATION = 2000;
-const LENGTH = 15;
-const THICKNESS = 0.3;
-const HIT_INTERVAL = 500;
+export interface LaserEffectProps {
+  type: MagicType.Laser;
+  startPosition: THREE.Vector3;
+  direction: THREE.Vector3;
+  duration: number;
+  length: number;
+  thickness: number;
+  hitInterval: number;
+  getLatestPosition?: () => THREE.Vector3;
+  getLatestDirection?: () => THREE.Vector3;
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
 
-export const LaserEffectController: React.FC<LaserProps> = ({
+export const LaserEffectController: React.FC<LaserEffectProps> = ({
   type,
   startPosition,
   direction,
+  duration,
+  length,
+  thickness,
+  hitInterval,
   getLatestPosition,
   getLatestDirection,
   onHit,
@@ -23,11 +38,6 @@ export const LaserEffectController: React.FC<LaserProps> = ({
   const [currentDirection, setCurrentDirection] = useState(
     direction.clone().normalize()
   );
-
-  const duration = useMemo(() => DURATION, []);
-  const length = useMemo(() => LENGTH, []);
-  const thickness = useMemo(() => THICKNESS, []);
-  const hitInterval = useMemo(() => HIT_INTERVAL, []);
 
   // useFrame 대신 사용할 애니메이션 루프 업데이트
   useEffect(() => {

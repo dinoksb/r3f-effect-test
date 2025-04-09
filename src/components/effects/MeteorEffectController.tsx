@@ -3,9 +3,23 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
-import { MeteorProps } from "../../types/magic";
+import { MagicType } from "../../types/magic";
 
-export const MeteorEffectController: React.FC<MeteorProps> = ({
+// Meteor 마법 Props
+export interface MeteorEffectProps {
+  type: MagicType.Meteor;
+  targetPosition: THREE.Vector3;
+  count: number;
+  radius: number;
+  duration: number;
+  spread: number;
+  rayOriginYOffset: number;
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
+
+export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
   targetPosition,
   count,
   duration,

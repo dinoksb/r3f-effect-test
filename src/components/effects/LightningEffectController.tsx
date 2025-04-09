@@ -3,9 +3,22 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { LightningStrike } from "./LightningStrike";
-import { LightningProps } from "../../types/magic";
+import { MagicType } from "../../types/magic";
 
-export const LightningEffectController: React.FC<LightningProps> = ({
+// Lightning 마법 Props
+export interface LightningEffectProps {
+  type: MagicType.Lightning;
+  targetPosition: THREE.Vector3;
+  duration: number;
+  strikeCount: number;
+  spread: number;
+  rayOriginYOffset: number;
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
+
+export const LightningEffectController: React.FC<LightningEffectProps> = ({
   targetPosition,
   duration,
   strikeCount,

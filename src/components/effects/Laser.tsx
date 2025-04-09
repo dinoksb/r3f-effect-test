@@ -7,9 +7,9 @@ import {
   IntersectionExitHandler,
   IntersectionEnterHandler,
 } from "@react-three/rapier";
-import { LaserProps } from "../../types/magic";
+import { LaserEffectProps } from "./LaserEffectController";
 
-export const Laser: React.FC<LaserProps> = ({
+export const Laser: React.FC<LaserEffectProps> = ({
   startPosition,
   direction,
   duration,

@@ -2,6 +2,14 @@ import React, { useMemo } from "react";
 import * as THREE from "three";
 import { Box } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
+import {
+  CollisionGroup,
+  createCollisionGroups,
+} from "../../constants/collisionGroups";
+// import {
+//   CollisionGroup,
+//   createCollisionGroup,
+// } from "../../constants/collisionGroups";
 
 type RandomBoxProps = {
   count?: number;
@@ -30,6 +38,7 @@ export const RandomBoxes: React.FC<RandomBoxProps> = ({
           key={index}
           type="dynamic"
           colliders="cuboid"
+          collisionGroups={createCollisionGroups(CollisionGroup.Box, [])}
         >
           <Box position={pos.toArray()} args={[1, 1, 1]} scale={[1, 3, 1]}>
             <meshStandardMaterial attach="material" color="orange" />

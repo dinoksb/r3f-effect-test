@@ -3,12 +3,30 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { PoisonSwamp } from "./PoisonSwamp";
-import { PoisonSwampProps } from "../../types/magic";
+import { MagicType } from "../../types/magic";
 
-export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
+// PoisonSwamp 마법 Props
+export interface PoisonSwampEffectProps {
+  type: MagicType.PoisonSwamp;
+  targetPosition: THREE.Vector3;
+  duration: number;
+  hitInterval: number;
+  radius: number;
+  height: number;
+  opacity: number;
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
+
+export const PoisonSwampEffectController: React.FC<PoisonSwampEffectProps> = ({
+  type,
   targetPosition,
   duration,
   hitInterval,
+  radius,
+  height,
+  opacity,
   onHit,
   onComplete,
   debug = false,
@@ -39,9 +57,13 @@ export const PoisonSwampEffectController: React.FC<PoisonSwampProps> = ({
 
   return (
     <PoisonSwamp
-      center={finalPos}
+      type={type}
+      targetPosition={finalPos}
       duration={duration}
       hitInterval={hitInterval}
+      radius={radius}
+      height={height}
+      opacity={opacity}
       onHit={onHit}
       onComplete={onComplete}
       debug={debug}

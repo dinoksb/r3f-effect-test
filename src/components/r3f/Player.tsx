@@ -13,6 +13,10 @@ import {
   CharacterRenderer,
   CharacterRendererRef,
 } from "vibe-starter-3d/dist/src/components/renderers/CharacterRenderer";
+import {
+  CollisionGroup,
+  createCollisionGroups,
+} from "../../constants/collisionGroups";
 
 /**
  * Player input parameters for action determination
@@ -250,7 +254,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
     const { determinePlayerState: determinePlayerState } = usePlayerStates();
     const { animationConfigMap } = usePlayerAnimations(currentStateRef);
     const characterRendererRef = useRef<CharacterRendererRef>(null);
-
+    const hasInitializedRef = useRef(false);
     const magicTriggeredRef = useRef(false);
 
     useImperativeHandle(
@@ -265,6 +269,24 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       }),
       []
     );
+
+    // Set collision groups on player rigid body
+    useFrame(() => {
+      if (hasInitializedRef.current) return;
+
+      const rigidBody = controllerRef?.current?.rigidBodyRef?.current;
+      if (!rigidBody) return;
+
+      for (let i = 0; i < rigidBody.collider.length; ++i) {
+        rigidBody
+          .collider(i)
+          .setCollisionGroups(
+            createCollisionGroups(CollisionGroup.Player, [CollisionGroup.Box])
+          );
+      }
+
+      hasInitializedRef.current = true;
+    });
 
     useFrame(() => {
       if (!controllerRef?.current?.rigidBodyRef?.current) return;

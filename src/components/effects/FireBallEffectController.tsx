@@ -2,15 +2,29 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
 import { Explosion } from "./Explosion";
-import { FireBallProps } from "../../types/magic";
+import { MagicType } from "../../types/magic";
 
-export const FireBallEffectController: React.FC<FireBallProps> = ({
+export interface FireBallEffectProps {
+  type: MagicType.FireBall;
+  speed: number;
+  startPosition: THREE.Vector3;
+  direction: THREE.Vector3;
+  duration: number;
+  radius?: number;
+  excludeCollisionGroup?: number[];
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
+
+export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
   type,
   startPosition,
   speed,
   duration,
   direction,
-  radius = 1,
+  radius,
+  excludeCollisionGroup,
   onHit,
   onComplete,
   debug = false,
@@ -60,6 +74,7 @@ export const FireBallEffectController: React.FC<FireBallProps> = ({
         speed={speed}
         duration={duration}
         radius={radius}
+        excludeCollisionGroup={excludeCollisionGroup}
         onHit={handleFireBallHit}
         onComplete={onComplete}
         debug={debug}

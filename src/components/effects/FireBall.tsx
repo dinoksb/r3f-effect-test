@@ -2,14 +2,19 @@ import React, { useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-import { FireBallProps } from "../../types/magic";
+import {
+  CollisionGroup,
+  createCollisionGroups,
+} from "../../constants/collisionGroups";
+import { FireBallEffectProps } from "./FireBallEffectController";
 
-export const FireBall: React.FC<FireBallProps> = ({
+export const FireBall: React.FC<FireBallEffectProps> = ({
   startPosition,
   direction,
   speed,
   duration,
-  radius = 1, // 기본 크기 비율 추가 (기본값 1)
+  radius, // 기본 크기 비율 추가 (기본값 1)
+  excludeCollisionGroup, // 충돌 그룹
   onHit,
   onComplete,
 }) => {
@@ -113,13 +118,11 @@ export const FireBall: React.FC<FireBallProps> = ({
   return (
     <RigidBody
       ref={rigidRef}
-      // Sensor 충돌 모드 설정
       type="kinematicPosition"
-      colliders={false} // 아래 BallCollider로 모양 지정
-      sensor={true} // 물리 반응 없이 충돌 이벤트만
-      // 충돌(교차) 이벤트
+      position={[startPosition.x, startPosition.y, startPosition.z]}
+      colliders={false}
+      sensor={true}
       onIntersectionEnter={(other) => {
-        // FireBall이 다른 RigidBody와 교차하면 호출
         const translation = rigidRef.current?.translation();
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
@@ -127,10 +130,11 @@ export const FireBall: React.FC<FireBallProps> = ({
         onHit?.(other, hitPosition);
         setDestroyed(true);
       }}
-      // 초기 위치 설정
-      position={[startPosition.x, startPosition.y, startPosition.z]}
-      // 중력등 영향 안 받도록
       gravityScale={0}
+      collisionGroups={createCollisionGroups(
+        CollisionGroup.Projectile,
+        excludeCollisionGroup
+      )}
     >
       {/* FireBall 충돌용 컬라이더 (반지름=0.4) */}
       <BallCollider args={[colliderRadius]} />
@@ -169,17 +173,6 @@ export const FireBall: React.FC<FireBallProps> = ({
         distance={lightDistance}
         decay={2}
       />
-
-      {/* Trail 효과 (살짝 지연 후) */}
-      {/* {trailReady && (
-        <Trail
-          target={coreRef}
-          width={4}
-          length={1}
-          color={new THREE.Color('#ff6600')}
-          attenuation={(w) => w}
-        />
-      )} */}
     </RigidBody>
   );
 };

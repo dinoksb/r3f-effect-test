@@ -1,200 +1,59 @@
 import React from "react";
 import {
-  MagicType,
-  MagicFactoryProps,
-  FireBallProps,
-  LaserProps,
-  LightningProps,
-  MeteorProps,
-  PoisonSwampProps,
-  FireBallFactoryProps,
-  LaserFactoryProps,
-  LightningFactoryProps,
-  MeteorFactoryProps,
-  PoisonSwampFactoryProps,
-} from "../types/magic";
-import { FireBallEffectController } from "../components/effects/FireBallEffectController";
-import { LaserEffectController } from "../components/effects/LaserEffectController";
-import { LightningEffectController } from "../components/effects/LightningEffectController";
-import { MeteorEffectController } from "../components/effects/MeteorEffectController";
-import { PoisonSwampEffectController } from "../components/effects/PoisonSwampEffectController";
+  FireBallEffectController,
+  FireBallEffectProps,
+} from "../components/effects/FireBallEffectController";
+import {
+  LaserEffectController,
+  LaserEffectProps,
+} from "../components/effects/LaserEffectController";
+import {
+  LightningEffectController,
+  LightningEffectProps,
+} from "../components/effects/LightningEffectController";
+import {
+  MeteorEffectController,
+  MeteorEffectProps,
+} from "../components/effects/MeteorEffectController";
+import {
+  PoisonSwampEffectController,
+  PoisonSwampEffectProps,
+} from "../components/effects/PoisonSwampEffectController";
+import { MagicType } from "../types/magic";
 
-/**
- * 마법별 기본 설정값 (상수)
- */
-const MAGIC_CONFIG = {
-  FIREBALL: {
-    RADIUS: 0.5,
-    SPEED: 10,
-    DURATION: 2000,
-  },
-  LASER: {
-    DURATION: 2000,
-    LENGTH: 15,
-    THICKNESS: 0.3,
-    HIT_INTERVAL: 500,
-  },
-  METEOR: {
-    DURATION: 3000,
-    COUNT: 1,
-    RADIUS: 3,
-    SPREAD: 10,
-    RAY_ORIGIN_Y_OFFSET: 20,
-  },
-  LIGHTNING: {
-    DURATION: 700,
-    STRIKE_COUNT: 5,
-    SPREAD: 0.5,
-    RAY_ORIGIN_Y_OFFSET: 20,
-  },
-  POISONSWAMP: {
-    DURATION: 2000,
-    RADIUS: 5,
-    HEIGHT: -0.5,
-    OPACITY: 0.5,
-    HIT_INTERVAL: 500,
-  },
-};
+export type MagicProps =
+  | FireBallEffectProps
+  | LaserEffectProps
+  | LightningEffectProps
+  | MeteorEffectProps
+  | PoisonSwampEffectProps;
 
-/**
- * 마법 이펙트를 렌더링하는 컴포넌트
- * Experience.tsx에서 <MagicFactory /> 형태로 사용 가능
- */
-export const MagicFactory: React.FC<MagicFactoryProps> = (props) => {
-  const { type } = props;
+export const MagicComponentMap = {
+  [MagicType.FireBall]: FireBallEffectController,
+  [MagicType.Laser]: LaserEffectController,
+  [MagicType.Lightning]: LightningEffectController,
+  [MagicType.Meteor]: MeteorEffectController,
+  [MagicType.PoisonSwamp]: PoisonSwampEffectController,
+} as const;
 
-  switch (type) {
-    case MagicType.FireBall:
-      return createFireBall(props as FireBallFactoryProps);
-    case MagicType.Laser:
-      return createLaser(props as LaserFactoryProps);
-    case MagicType.Lightning:
-      return createLightning(props as LightningFactoryProps);
-    case MagicType.Meteor:
-      return createMeteor(props as MeteorFactoryProps);
-    case MagicType.PoisonSwamp:
-      return createPoisonSwamp(props as PoisonSwampFactoryProps);
-    default:
-      console.warn(`[MagicFactory] Unknown magic type: ${type}`);
-      return null;
+export class MagicFactory {
+  static create(props: MagicProps): JSX.Element {
+    switch (props.type) {
+      case MagicType.FireBall:
+        console.log("FireBallEffectController", props);
+        return <FireBallEffectController {...props} />;
+      case MagicType.Laser:
+        console.log("LaserEffectController", props);
+        return <LaserEffectController {...props} />;
+      case MagicType.Lightning:
+        return <LightningEffectController {...props} />;
+      case MagicType.Meteor:
+        return <MeteorEffectController {...props} />;
+      case MagicType.PoisonSwamp:
+        return <PoisonSwampEffectController {...props} />;
+      default:
+        console.warn(`[MagicFactory] Unknown magic type`);
+        return null;
+    }
   }
-};
-
-/**
- * FireBall 마법 렌더링 함수
- */
-function createFireBall(props: FireBallFactoryProps): React.ReactNode {
-  const { type, startPosition, direction, onHit, onComplete, debug } = props;
-
-  const fireBallProps: FireBallProps = {
-    type,
-    startPosition,
-    direction,
-    speed: MAGIC_CONFIG.FIREBALL.SPEED,
-    duration: MAGIC_CONFIG.FIREBALL.DURATION,
-    radius: MAGIC_CONFIG.FIREBALL.RADIUS, // 사용자 지정 크기 또는 기본값 사용
-    onHit,
-    onComplete,
-    debug,
-  };
-
-  return <FireBallEffectController {...fireBallProps} />;
-}
-
-/**
- * Laser 마법 렌더링 함수
- */
-function createLaser(props: LaserFactoryProps): React.ReactNode {
-  const {
-    type,
-    startPosition,
-    direction,
-    getLatestPosition,
-    getLatestDirection,
-    onHit,
-    onComplete,
-    debug,
-  } = props;
-
-  const laserProps: LaserProps = {
-    type,
-    startPosition,
-    direction,
-    duration: MAGIC_CONFIG.LASER.DURATION,
-    length: MAGIC_CONFIG.LASER.LENGTH,
-    thickness: MAGIC_CONFIG.LASER.THICKNESS,
-    hitInterval: MAGIC_CONFIG.LASER.HIT_INTERVAL,
-    getLatestPosition,
-    getLatestDirection,
-    onHit,
-    onComplete,
-    debug,
-  };
-
-  return <LaserEffectController {...laserProps} />;
-}
-
-/**
- * Lightning 마법 렌더링 함수
- */
-function createLightning(props: LightningFactoryProps): React.ReactNode {
-  const { type, targetPosition, onHit, onComplete, debug } = props;
-
-  const lightningProps: LightningProps = {
-    type,
-    targetPosition,
-    duration: MAGIC_CONFIG.LIGHTNING.DURATION,
-    strikeCount: MAGIC_CONFIG.LIGHTNING.STRIKE_COUNT,
-    spread: MAGIC_CONFIG.LIGHTNING.SPREAD,
-    rayOriginYOffset: MAGIC_CONFIG.LIGHTNING.RAY_ORIGIN_Y_OFFSET,
-    onHit,
-    onComplete,
-    debug,
-  };
-
-  return <LightningEffectController {...lightningProps} />;
-}
-
-/**
- * Meteor 마법 렌더링 함수
- */
-function createMeteor(props: MeteorFactoryProps): React.ReactNode {
-  const { type, targetPosition, onHit, onComplete, debug } = props;
-
-  const meteorProps: MeteorProps = {
-    type,
-    targetPosition,
-    count: MAGIC_CONFIG.METEOR.COUNT,
-    radius: MAGIC_CONFIG.METEOR.RADIUS,
-    duration: MAGIC_CONFIG.METEOR.DURATION,
-    spread: MAGIC_CONFIG.METEOR.SPREAD,
-    rayOriginYOffset: MAGIC_CONFIG.METEOR.RAY_ORIGIN_Y_OFFSET,
-    onHit,
-    onComplete,
-    debug,
-  };
-
-  return <MeteorEffectController {...meteorProps} />;
-}
-
-/**
- * PoisonSwamp 마법 렌더링 함수
- */
-function createPoisonSwamp(props: PoisonSwampFactoryProps): React.ReactNode {
-  const { type, targetPosition, onHit, onComplete, debug } = props;
-
-  const swampProps: PoisonSwampProps = {
-    type,
-    targetPosition,
-    duration: MAGIC_CONFIG.POISONSWAMP.DURATION,
-    hitInterval: MAGIC_CONFIG.POISONSWAMP.HIT_INTERVAL,
-    radius: MAGIC_CONFIG.POISONSWAMP.RADIUS,
-    height: MAGIC_CONFIG.POISONSWAMP.HEIGHT,
-    opacity: MAGIC_CONFIG.POISONSWAMP.OPACITY,
-    onHit,
-    onComplete,
-    debug,
-  };
-
-  return <PoisonSwampEffectController {...swampProps} />;
 }
