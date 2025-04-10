@@ -1,10 +1,10 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { CollisionGroup } from "../../constants/collisionGroups";
 import { FireBallEffectProps } from "./FireBallEffectController";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 export const FireBall: React.FC<FireBallEffectProps> = ({
   startPosition,
@@ -41,24 +41,6 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
   const colliderRadius = radius;
   const lightDistance = 8 * radius;
   const lightIntensityBase = 5 * radius;
-
-  // 충돌 시스템 설정
-  useEffect(() => {
-    // 메시에 충돌 그룹 정보 설정
-    if (groupRef.current) {
-      CollisionSystem.setupCollisionObject(
-        groupRef.current,
-        CollisionGroup.Projectile,
-        Array.isArray(excludeCollisionGroup)
-          ? excludeCollisionGroup
-          : excludeCollisionGroup
-          ? [excludeCollisionGroup]
-          : []
-      );
-    }
-
-    // RigidBody에는 직접 적용하지 않음 - props로 설정
-  }, [excludeCollisionGroup]);
 
   // 매 프레임마다 kinematic RigidBody의 위치와 이펙트를 업데이트
   useFrame(() => {
@@ -133,10 +115,11 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
   if (destroyed) return null;
 
   // RigidBody를 위한 충돌 그룹 계산
-  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
-    CollisionGroup.Projectile,
-    excludeCollisionGroup
-  );
+  const collisionGroups =
+    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionGroup.Projectile,
+      excludeCollisionGroup
+    );
 
   return (
     <RigidBody

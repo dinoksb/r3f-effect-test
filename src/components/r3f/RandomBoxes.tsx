@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { Box } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
 import { CollisionGroup } from "../../constants/collisionGroups";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 type RandomBoxProps = {
   count?: number;
@@ -32,7 +32,7 @@ export const RandomBoxes: React.FC<RandomBoxProps> = ({
           key={index}
           type="dynamic"
           colliders="cuboid"
-          collisionGroups={CollisionSystem.createRigidBodyCollisionGroups(
+          collisionGroups={RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
             CollisionGroup.Box,
             []
           )}

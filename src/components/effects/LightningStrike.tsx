@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Tube, Ring } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionGroup } from "../../constants/collisionGroups";
 
 interface LightningStrikeProps {
@@ -279,10 +279,11 @@ const Hitbox: React.FC<HitboxProps> = ({
 
   if (destroyed) return null;
 
-  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
-    CollisionGroup.AOE,
-    excludeCollisionGroup
-  );
+  const collisionGroups =
+    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionGroup.AOE,
+      excludeCollisionGroup
+    );
 
   return (
     <RigidBody

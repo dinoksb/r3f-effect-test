@@ -150,6 +150,19 @@ export function Experience() {
             onComplete: () => onComplete(newKey),
           };
           break;
+        case EffectType.Bullet:
+          magic = {
+            type: EffectType.Bullet,
+            speed: 100,
+            duration: 2000,
+            startPosition: startPosition,
+            direction: direction,
+            size: new THREE.Vector3(0.5, 0.5, 1),
+            excludeCollisionGroup: [CollisionGroup.Player],
+            onHit: onHit,
+            onComplete: () => onComplete(newKey),
+          };
+          break;
       }
 
       if (!magic) return;
@@ -178,6 +191,7 @@ export function Experience() {
       if (e.key === "4") setSelectedMagic(EffectType.Meteor);
       if (e.key === "5") setSelectedMagic(EffectType.PoisonSwamp);
       if (e.key === "6") setSelectedMagic(EffectType.AreaIndicator);
+      if (e.key === "7") setSelectedMagic(EffectType.Bullet);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);

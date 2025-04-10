@@ -10,7 +10,7 @@ import {
   IntersectionExitHandler,
 } from "@react-three/rapier";
 import { PoisonSwampEffectProps } from "./PoisonSwampEffectController";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionGroup } from "../../constants/collisionGroups";
 
 interface BubbleParticle {
@@ -251,10 +251,11 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
   const safeHeight = Math.max(Math.abs(calcHeight), calcHeight * 1.2);
 
   // add collision groups
-  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
-    CollisionGroup.AOE,
-    excludeCollisionGroup
-  );
+  const collisionGroups =
+    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionGroup.AOE,
+      excludeCollisionGroup
+    );
 
   return (
     <group name="poison-swamp" ref={groupRef} position={targetPosition}>

@@ -5,7 +5,7 @@ import { Sphere, Trail } from "@react-three/drei";
 import { Explosion } from "./Explosion";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { MeteorEffectProps } from "./MeteorEffectController";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionGroup } from "../../constants/collisionGroups";
 
 /** ----------------------------
@@ -128,10 +128,11 @@ const Hitbox: React.FC<HitboxProps> = ({
 
   if (destroyed) return null;
 
-  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
-    CollisionGroup.Projectile,
-    excludeCollisionGroup
-  );
+  const collisionGroups =
+    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionGroup.Projectile,
+      excludeCollisionGroup
+    );
 
   return (
     <RigidBody

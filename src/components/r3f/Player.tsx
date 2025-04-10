@@ -14,7 +14,7 @@ import {
   CharacterRendererRef,
 } from "vibe-starter-3d/dist/src/components/renderers/CharacterRenderer";
 import { CollisionGroup } from "../../constants/collisionGroups";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 /**
  * Player input parameters for action determination
@@ -284,7 +284,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
         rigidBody
           .collider(i)
           .setCollisionGroups(
-            CollisionSystem.createRigidBodyCollisionGroups(
+            RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
               CollisionGroup.Player,
               []
             )

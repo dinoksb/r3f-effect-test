@@ -8,7 +8,7 @@ import {
   IntersectionEnterHandler,
 } from "@react-three/rapier";
 import { LaserEffectProps } from "./LaserEffectController";
-import { CollisionSystem } from "../../utils/collisionSystem";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionGroup } from "../../constants/collisionGroups";
 
 type LaserEffect = Omit<LaserEffectProps, "playerTransformRef"> & {
@@ -282,10 +282,11 @@ export const Laser: React.FC<LaserEffect> = ({
     )
   );
 
-  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
-    CollisionGroup.Projectile,
-    excludeCollisionGroup
-  );
+  const collisionGroups =
+    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionGroup.Projectile,
+      excludeCollisionGroup
+    );
 
   return (
     <RigidBody
