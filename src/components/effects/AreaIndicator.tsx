@@ -134,32 +134,16 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
         />
       </Ring>
 
-      {/* 중앙 십자선 표시 */}
-      <group>
-        {/* 가로선 */}
-        <mesh ref={rowLineRef}>
-          <boxGeometry args={[radius * 0.5, radius * 0.05, 0.01]} />
-          <meshBasicMaterial
-            color={color}
-            transparent
-            opacity={0.9}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </mesh>
-
-        {/* 세로선 */}
-        <mesh ref={colLineRef}>
-          <boxGeometry args={[radius * 0.05, radius * 0.5, 0.01]} />
-          <meshBasicMaterial
-            color={color}
-            transparent
-            opacity={0.9}
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </mesh>
-      </group>
+      <Ring args={[0, radius * 0.1, 32, 1, 0, Math.PI * 2]}>
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={0.7}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </Ring>
     </group>
   );
 };
