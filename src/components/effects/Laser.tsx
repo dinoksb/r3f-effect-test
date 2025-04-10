@@ -9,8 +9,13 @@ import {
 } from "@react-three/rapier";
 import { LaserEffectProps } from "./LaserEffectController";
 
-export const Laser: React.FC<LaserEffectProps> = ({
-  startPosition,
+type LaserEffect = Omit<LaserEffectProps, "playerTransformRef"> & {
+  position: THREE.Vector3;
+  direction: THREE.Vector3;
+};
+
+export const Laser: React.FC<LaserEffect> = ({
+  position,
   direction,
   duration,
   length = 13,
@@ -74,7 +79,7 @@ export const Laser: React.FC<LaserEffectProps> = ({
   };
 
   const calculateHitPosition = () => {
-    return startPosition.clone().add(
+    return position.clone().add(
       direction
         .clone()
         .normalize()
@@ -86,7 +91,7 @@ export const Laser: React.FC<LaserEffectProps> = ({
     if (!rigidRef.current) return;
 
     rigidRef.current.setTranslation(
-      { x: startPosition.x, y: startPosition.y, z: startPosition.z },
+      { x: position.x, y: position.y, z: position.z },
       true
     );
 
@@ -242,7 +247,7 @@ export const Laser: React.FC<LaserEffectProps> = ({
     const normalizedDir = direction.clone().normalize();
 
     endPosition
-      .copy(startPosition)
+      .copy(position)
       .add(normalizedDir.clone().multiplyScalar(length));
 
     processCollisions();
@@ -278,12 +283,12 @@ export const Laser: React.FC<LaserEffectProps> = ({
     <RigidBody
       ref={rigidRef}
       type="kinematicPosition"
-      colliders={false}
+      position={position}
+      rotation={initialRotation}
       sensor={true}
+      colliders={false}
       onIntersectionEnter={handleCollisionEnter}
       onIntersectionExit={handleCollisionExit}
-      position={[startPosition.x, startPosition.y, startPosition.z]}
-      rotation={initialRotation}
       gravityScale={0}
     >
       <CuboidCollider

@@ -3,11 +3,11 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { LightningStrike } from "./LightningStrike";
-import { MagicType } from "../../types/magic";
+import { EffectType } from "../../types/magic";
 
 // Lightning 마법 Props
 export interface LightningEffectProps {
-  type: MagicType.Lightning;
+  type: EffectType.Lightning;
   targetPosition: THREE.Vector3;
   duration: number;
   strikeCount: number;

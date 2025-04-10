@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
 import { Explosion } from "./Explosion";
-import { MagicType } from "../../types/magic";
+import { EffectType } from "../../types/magic";
 
 export interface FireBallEffectProps {
-  type: MagicType.FireBall;
+  type: EffectType.FireBall;
   speed: number;
   startPosition: THREE.Vector3;
   direction: THREE.Vector3;

@@ -19,38 +19,44 @@ import {
   PoisonSwampEffectController,
   PoisonSwampEffectProps,
 } from "../components/effects/PoisonSwampEffectController";
-import { MagicType } from "../types/magic";
+import { EffectType } from "../types/magic";
+import {
+  AreaIndicatorEffectController,
+  AreaIndicatorEffectProps,
+} from "../components/effects/AreaIndicatorEffectController";
 
-export type MagicProps =
+export type EffectProps =
   | FireBallEffectProps
   | LaserEffectProps
   | LightningEffectProps
   | MeteorEffectProps
-  | PoisonSwampEffectProps;
+  | PoisonSwampEffectProps
+  | AreaIndicatorEffectProps;
 
 export const MagicComponentMap = {
-  [MagicType.FireBall]: FireBallEffectController,
-  [MagicType.Laser]: LaserEffectController,
-  [MagicType.Lightning]: LightningEffectController,
-  [MagicType.Meteor]: MeteorEffectController,
-  [MagicType.PoisonSwamp]: PoisonSwampEffectController,
+  [EffectType.FireBall]: FireBallEffectController,
+  [EffectType.Laser]: LaserEffectController,
+  [EffectType.Lightning]: LightningEffectController,
+  [EffectType.Meteor]: MeteorEffectController,
+  [EffectType.PoisonSwamp]: PoisonSwampEffectController,
+  [EffectType.AreaIndicator]: AreaIndicatorEffectController,
 } as const;
 
-export class MagicFactory {
-  static create(props: MagicProps): JSX.Element {
+export class EffectFactory {
+  static create(props: EffectProps): JSX.Element {
     switch (props.type) {
-      case MagicType.FireBall:
-        console.log("FireBallEffectController", props);
+      case EffectType.FireBall:
         return <FireBallEffectController {...props} />;
-      case MagicType.Laser:
-        console.log("LaserEffectController", props);
+      case EffectType.Laser:
         return <LaserEffectController {...props} />;
-      case MagicType.Lightning:
+      case EffectType.Lightning:
         return <LightningEffectController {...props} />;
-      case MagicType.Meteor:
+      case EffectType.Meteor:
         return <MeteorEffectController {...props} />;
-      case MagicType.PoisonSwamp:
+      case EffectType.PoisonSwamp:
         return <PoisonSwampEffectController {...props} />;
+      case EffectType.AreaIndicator:
+        return <AreaIndicatorEffectController {...props} />;
       default:
         console.warn(`[MagicFactory] Unknown magic type`);
         return null;

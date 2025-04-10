@@ -3,11 +3,11 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { PoisonSwamp } from "./PoisonSwamp";
-import { MagicType } from "../../types/magic";
+import { EffectType } from "../../types/magic";
 
 // PoisonSwamp 마법 Props
 export interface PoisonSwampEffectProps {
-  type: MagicType.PoisonSwamp;
+  type: EffectType.PoisonSwamp;
   targetPosition: THREE.Vector3;
   duration: number;
   hitInterval: number;

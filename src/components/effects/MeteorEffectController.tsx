@@ -3,11 +3,11 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
-import { MagicType } from "../../types/magic";
+import { EffectType } from "../../types/magic";
 
 // Meteor 마법 Props
 export interface MeteorEffectProps {
-  type: MagicType.Meteor;
+  type: EffectType.Meteor;
   targetPosition: THREE.Vector3;
   count: number;
   radius: number;

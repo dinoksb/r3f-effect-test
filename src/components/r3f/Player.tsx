@@ -59,6 +59,10 @@ interface PlayerProps {
     startPosition: THREE.Vector3,
     targetPosition: THREE.Vector3
   ) => void;
+  onUpdatePlayerTransform?: (
+    position: THREE.Vector3,
+    direction: THREE.Vector3
+  ) => void;
 }
 
 /**
@@ -246,6 +250,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       controllerRef,
       targetHeight = 1.6,
       onCastMagic,
+      onUpdatePlayerTransform,
     },
     ref
   ) => {
@@ -288,6 +293,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       hasInitializedRef.current = true;
     });
 
+    // Magic cast
     useFrame(() => {
       if (!controllerRef?.current?.rigidBodyRef?.current) return;
 
@@ -296,16 +302,29 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
 
       const triggerMagic = isMagic && !magicTriggeredRef.current;
 
+      // Use the existing rigidBody reference
+      const worldPosition =
+        controllerRef.current.rigidBodyRef.current.translation();
+      const position = new THREE.Vector3(
+        worldPosition.x,
+        worldPosition.y,
+        worldPosition.z
+      );
+
+      // Forward direction = apply quaternion to (0, 0, -1)
+      const rotation = controllerRef.current.rigidBodyRef.current.rotation(); // Quaternion
+      const quaternion = new THREE.Quaternion(
+        rotation.x,
+        rotation.y,
+        rotation.z,
+        rotation.w
+      );
+      const direction = new THREE.Vector3(0, 0, 1)
+        .applyQuaternion(quaternion)
+        .normalize();
+
       if (triggerMagic) {
         console.log("Magic key pressed - Requesting cast!");
-        const rigidBody = controllerRef.current.rigidBodyRef.current;
-        const position = rigidBody.translation();
-        const startPosition = new THREE.Vector3(
-          position.x,
-          position.y,
-          position.z
-        );
-
         // Calculate target near player (re-enabled)
         const targetPosition = new THREE.Vector3(0, 0, 0);
         const currentPosition =
@@ -320,27 +339,20 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
           currentPosition.z + Math.sin(randomAngle) * randomRadius
         );
 
-        // Forward direction = apply quaternion to (0, 0, -1)
-        const rotation = rigidBody.rotation(); // Quaternion
-        const quaternion = new THREE.Quaternion(
-          rotation.x,
-          rotation.y,
-          rotation.z,
-          rotation.w
-        );
-        const direction = new THREE.Vector3(0, 0, 1)
-          .applyQuaternion(quaternion)
-          .normalize();
-
         // Call the callback provided by the parent
         if (onCastMagic) {
-          onCastMagic(direction, startPosition, targetPosition);
+          onCastMagic(direction, position, targetPosition);
         } else {
           console.warn(
             "Player tried to cast magic, but onCastMagic prop is missing!"
           );
         }
       }
+
+      if (onUpdatePlayerTransform) {
+        onUpdatePlayerTransform(position, direction);
+      }
+
       magicTriggeredRef.current = isMagic;
 
       // Determine player state
