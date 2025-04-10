@@ -83,9 +83,9 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
   radius = 5,
   height = -0.5,
   opacity = 0.5,
-  debug = false,
-  onHit,
   hitInterval = 500,
+  onHit,
+  debug = false,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const startTime = useRef(performance.now());

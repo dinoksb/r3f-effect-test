@@ -130,7 +130,7 @@ export function Experience() {
             type: EffectType.PoisonSwamp,
             duration: 2000,
             targetPosition: targetPosition,
-            hitInterval: 0.5,
+            hitInterval: 1000,
             radius: 3,
             height: 0,
             opacity: 0.8,
