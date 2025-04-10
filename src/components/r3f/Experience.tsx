@@ -9,8 +9,9 @@ import { RandomBoxes } from "./RandomBoxes";
 import * as THREE from "three";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { EffectFactory, EffectProps } from "../../factories/EffectFactory";
-import { EffectType } from "../../types/magic";
+import { EffectType } from "../../types/effect";
 import React from "react";
+import { CollisionGroup } from "../../constants/collisionGroups";
 
 interface MagicEffect {
   key: number;
@@ -82,7 +83,7 @@ export function Experience() {
             startPosition,
             direction,
             radius: 0.5,
-            excludeCollisionGroup: [],
+            excludeCollisionGroup: [CollisionGroup.Player],
             onHit: onHit,
             onComplete: () => onComplete(newKey),
           };
@@ -94,7 +95,8 @@ export function Experience() {
             duration: 2000,
             length: 10,
             thickness: 0.3,
-            hitInterval: 0.1,
+            hitInterval: 500,
+            excludeCollisionGroup: [CollisionGroup.Player],
             onHit: onHit,
             onComplete: () => onComplete(newKey),
           };
@@ -107,6 +109,7 @@ export function Experience() {
             strikeCount: 5,
             spread: 1,
             rayOriginYOffset: 15,
+            excludeCollisionGroup: [CollisionGroup.Player],
             onHit: onHit,
             onComplete: () => onComplete(newKey),
           };
@@ -120,6 +123,7 @@ export function Experience() {
             rayOriginYOffset: 15,
             duration: 2000,
             targetPosition: targetPosition,
+            excludeCollisionGroup: [CollisionGroup.Player],
             onHit: onHit,
             onComplete: () => onComplete(newKey),
           };
@@ -133,6 +137,7 @@ export function Experience() {
             radius: 3,
             height: 0,
             opacity: 0.8,
+            excludeCollisionGroup: [CollisionGroup.Player],
             onHit: onHit,
             onComplete: () => onComplete(newKey),
           };

@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
-import { EffectType } from "../../types/magic";
+import { EffectType } from "../../types/effect";
 
 // Meteor 마법 Props
 export interface MeteorEffectProps {
@@ -14,6 +14,7 @@ export interface MeteorEffectProps {
   duration: number; // effect duration(ms)
   spread: number;
   rayOriginYOffset: number;
+  excludeCollisionGroup?: number[];
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
@@ -26,6 +27,7 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
   radius,
   spread,
   rayOriginYOffset,
+  excludeCollisionGroup,
   onHit,
   onComplete,
   debug = false,
@@ -117,6 +119,7 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
       targetPositions={targetPositions}
       radius={radius}
       duration={duration}
+      excludeCollisionGroup={excludeCollisionGroup}
       onHit={onHit}
       onComplete={onComplete}
       debug={debug}

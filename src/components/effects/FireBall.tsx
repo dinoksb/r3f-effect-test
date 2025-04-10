@@ -1,12 +1,10 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-import {
-  CollisionGroup,
-  createCollisionGroups,
-} from "../../constants/collisionGroups";
+import { CollisionGroup } from "../../constants/collisionGroups";
 import { FireBallEffectProps } from "./FireBallEffectController";
+import { CollisionSystem } from "../../utils/collisionSystem";
 
 export const FireBall: React.FC<FireBallEffectProps> = ({
   startPosition,
@@ -27,6 +25,7 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
 
   // RigidBody 참조 (Rapier 객체)
   const rigidRef = useRef(null);
+  const groupRef = useRef<THREE.Group>(null);
 
   // 내부 Mesh & Light를 가리키는 ref
   const outerRef = useRef<THREE.Mesh>(null);
@@ -42,6 +41,24 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
   const colliderRadius = radius;
   const lightDistance = 8 * radius;
   const lightIntensityBase = 5 * radius;
+
+  // 충돌 시스템 설정
+  useEffect(() => {
+    // 메시에 충돌 그룹 정보 설정
+    if (groupRef.current) {
+      CollisionSystem.setupCollisionObject(
+        groupRef.current,
+        CollisionGroup.Projectile,
+        Array.isArray(excludeCollisionGroup)
+          ? excludeCollisionGroup
+          : excludeCollisionGroup
+          ? [excludeCollisionGroup]
+          : []
+      );
+    }
+
+    // RigidBody에는 직접 적용하지 않음 - props로 설정
+  }, [excludeCollisionGroup]);
 
   // 매 프레임마다 kinematic RigidBody의 위치와 이펙트를 업데이트
   useFrame(() => {
@@ -115,6 +132,12 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
   // 소멸되면 렌더링 X
   if (destroyed) return null;
 
+  // RigidBody를 위한 충돌 그룹 계산
+  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
+    CollisionGroup.Projectile,
+    excludeCollisionGroup
+  );
+
   return (
     <RigidBody
       ref={rigidRef}
@@ -131,48 +154,47 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
         setDestroyed(true);
       }}
       gravityScale={0}
-      collisionGroups={createCollisionGroups(
-        CollisionGroup.Projectile,
-        excludeCollisionGroup
-      )}
+      collisionGroups={collisionGroups}
     >
       {/* FireBall 충돌용 컬라이더 (반지름=0.4) */}
       <BallCollider args={[colliderRadius]} />
 
-      {/* 불꽃 외피 */}
-      <mesh ref={outerRef}>
-        <sphereGeometry args={[outerRadius, 16, 16]} />
-        <meshBasicMaterial
-          color="#ff3300"
-          transparent
-          opacity={0.8}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+      <group ref={groupRef}>
+        {/* 불꽃 외피 */}
+        <mesh ref={outerRef}>
+          <sphereGeometry args={[outerRadius, 16, 16]} />
+          <meshBasicMaterial
+            color="#ff3300"
+            transparent
+            opacity={0.8}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
 
-      {/* 중심 코어 */}
-      <mesh ref={coreRef}>
-        <sphereGeometry args={[coreRadius, 16, 16]} />
-        <meshBasicMaterial
-          color="#ffffcc"
-          transparent
-          opacity={1}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+        {/* 중심 코어 */}
+        <mesh ref={coreRef}>
+          <sphereGeometry args={[coreRadius, 16, 16]} />
+          <meshBasicMaterial
+            color="#ffffcc"
+            transparent
+            opacity={1}
+            side={THREE.DoubleSide}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
 
-      {/* 포인트 라이트 */}
-      <pointLight
-        ref={lightRef}
-        color="#ff6600"
-        intensity={lightIntensityBase}
-        distance={lightDistance}
-        decay={2}
-      />
+        {/* 포인트 라이트 */}
+        <pointLight
+          ref={lightRef}
+          color="#ff6600"
+          intensity={lightIntensityBase}
+          distance={lightDistance}
+          decay={2}
+        />
+      </group>
     </RigidBody>
   );
 };

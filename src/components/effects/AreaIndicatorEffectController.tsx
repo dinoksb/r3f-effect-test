@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import * as THREE from "three";
 import { AreaIndicator } from "./AreaIndicator";
-import { EffectType } from "../../types/magic";
+import { EffectType } from "../../types/effect";
 export interface AreaIndicatorEffectProps {
   type: EffectType.AreaIndicator;
   targetPosition: THREE.Vector3;

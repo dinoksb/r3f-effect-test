@@ -8,6 +8,8 @@ import {
   IntersectionEnterHandler,
 } from "@react-three/rapier";
 import { LaserEffectProps } from "./LaserEffectController";
+import { CollisionSystem } from "../../utils/collisionSystem";
+import { CollisionGroup } from "../../constants/collisionGroups";
 
 type LaserEffect = Omit<LaserEffectProps, "playerTransformRef"> & {
   position: THREE.Vector3;
@@ -20,9 +22,10 @@ export const Laser: React.FC<LaserEffect> = ({
   duration,
   length = 13,
   thickness = 1,
+  hitInterval = 500,
+  excludeCollisionGroup,
   onHit,
   onComplete,
-  hitInterval = 500,
   debug = false,
 }) => {
   const [destroyed, setDestroyed] = useState(false);
@@ -279,6 +282,11 @@ export const Laser: React.FC<LaserEffect> = ({
     )
   );
 
+  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
+    CollisionGroup.Projectile,
+    excludeCollisionGroup
+  );
+
   return (
     <RigidBody
       ref={rigidRef}
@@ -290,6 +298,7 @@ export const Laser: React.FC<LaserEffect> = ({
       onIntersectionEnter={handleCollisionEnter}
       onIntersectionExit={handleCollisionExit}
       gravityScale={0}
+      collisionGroups={collisionGroups}
     >
       <CuboidCollider
         args={[thickness, thickness, length / 2]}

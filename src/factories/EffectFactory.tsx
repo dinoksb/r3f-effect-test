@@ -19,7 +19,7 @@ import {
   PoisonSwampEffectController,
   PoisonSwampEffectProps,
 } from "../components/effects/PoisonSwampEffectController";
-import { EffectType } from "../types/magic";
+import { EffectType } from "../types/effect";
 import {
   AreaIndicatorEffectController,
   AreaIndicatorEffectProps,

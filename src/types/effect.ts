@@ -6,4 +6,5 @@ export enum EffectType {
   Meteor = "meteor",
   PoisonSwamp = "poison-swamp",
   AreaIndicator = "area-indicator",
+  Bullet = "bullet",
 }

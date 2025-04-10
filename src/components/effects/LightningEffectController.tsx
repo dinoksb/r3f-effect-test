@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { LightningStrike } from "./LightningStrike";
-import { EffectType } from "../../types/magic";
+import { EffectType } from "../../types/effect";
 
 // Lightning 마법 Props
 export interface LightningEffectProps {
@@ -13,6 +13,7 @@ export interface LightningEffectProps {
   strikeCount: number;
   spread: number;
   rayOriginYOffset: number;
+  excludeCollisionGroup?: number[];
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
@@ -24,6 +25,7 @@ export const LightningEffectController: React.FC<LightningEffectProps> = ({
   strikeCount,
   spread,
   rayOriginYOffset,
+  excludeCollisionGroup,
   onHit,
   onComplete,
   debug = false,
@@ -139,6 +141,7 @@ export const LightningEffectController: React.FC<LightningEffectProps> = ({
     <LightningStrike
       commonStartPosition={startPosition}
       targetPositions={actualTargets}
+      excludeCollisionGroup={excludeCollisionGroup}
       onHit={onHit}
       debug={debug}
     />

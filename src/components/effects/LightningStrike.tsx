@@ -3,10 +3,13 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Tube, Ring } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
+import { CollisionSystem } from "../../utils/collisionSystem";
+import { CollisionGroup } from "../../constants/collisionGroups";
 
 interface LightningStrikeProps {
   commonStartPosition: THREE.Vector3; // Receive the fixed start position
   targetPositions: THREE.Vector3[];
+  excludeCollisionGroup?: number[];
   onHit: (other?: unknown, pos?: THREE.Vector3) => void;
   debug: boolean;
 }
@@ -244,6 +247,7 @@ const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({
 interface HitboxProps {
   position: THREE.Vector3;
   duration: number;
+  excludeCollisionGroup?: number[];
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   debug?: boolean;
   radius: number; // Required radius parameter
@@ -252,6 +256,7 @@ interface HitboxProps {
 const Hitbox: React.FC<HitboxProps> = ({
   position,
   duration,
+  excludeCollisionGroup,
   onHit,
   debug = false,
   radius,
@@ -274,6 +279,11 @@ const Hitbox: React.FC<HitboxProps> = ({
 
   if (destroyed) return null;
 
+  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
+    CollisionGroup.AOE,
+    excludeCollisionGroup
+  );
+
   return (
     <RigidBody
       ref={rigidRef}
@@ -289,6 +299,7 @@ const Hitbox: React.FC<HitboxProps> = ({
         );
         onHit?.(other, hitPosition);
       }}
+      collisionGroups={collisionGroups}
     >
       <BallCollider args={[radius]} />
 
@@ -311,6 +322,7 @@ const Hitbox: React.FC<HitboxProps> = ({
 export const LightningStrike: React.FC<LightningStrikeProps> = ({
   commonStartPosition,
   targetPositions,
+  excludeCollisionGroup,
   onHit,
   debug = false,
 }) => {
@@ -364,6 +376,7 @@ export const LightningStrike: React.FC<LightningStrikeProps> = ({
         <Hitbox
           position={centerPosition}
           duration={duration}
+          excludeCollisionGroup={excludeCollisionGroup}
           onHit={onHit}
           debug={debug}
           radius={effectRadius}

@@ -10,20 +10,8 @@ import {
   IntersectionExitHandler,
 } from "@react-three/rapier";
 import { PoisonSwampEffectProps } from "./PoisonSwampEffectController";
-
-// interface PoisonCloudProps {
-//   center: THREE.Vector3;
-//   duration: number;
-//   fadeOutDuration?: number;
-//   radius?: number;
-//   height?: number;
-//   opacity?: number;
-//   particleCount?: number;
-//   hitInterval?: number;
-//   onComplete: CompleteCallback;
-//   onHit: HitCallback;
-//   debug: boolean;
-// }
+import { CollisionSystem } from "../../utils/collisionSystem";
+import { CollisionGroup } from "../../constants/collisionGroups";
 
 interface BubbleParticle {
   position: THREE.Vector3;
@@ -79,12 +67,13 @@ function createBubbleParticles(
 export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
   targetPosition,
   duration = 2000,
-  onComplete: onFinish,
   radius = 5,
   height = -0.5,
   opacity = 0.5,
   hitInterval = 500,
+  excludeCollisionGroup,
   onHit,
+  onComplete,
   debug = false,
 }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -255,11 +244,17 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
     if (fadeOutProgress >= 1 && !finishCalled.current) {
       finishCalled.current = true;
       state.collidingObjects.clear();
-      onFinish?.();
+      onComplete?.();
     }
   });
 
   const safeHeight = Math.max(Math.abs(calcHeight), calcHeight * 1.2);
+
+  // add collision groups
+  const collisionGroups = CollisionSystem.createRigidBodyCollisionGroups(
+    CollisionGroup.AOE,
+    excludeCollisionGroup
+  );
 
   return (
     <group name="poison-swamp" ref={groupRef} position={targetPosition}>
@@ -287,6 +282,7 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
         sensor
         onIntersectionEnter={handleCollisionEnter}
         onIntersectionExit={handleCollisionExit}
+        collisionGroups={collisionGroups}
       >
         <CylinderCollider
           args={[safeHeight, radius * 0.95]}

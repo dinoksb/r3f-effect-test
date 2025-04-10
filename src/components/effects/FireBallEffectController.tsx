@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
 import { Explosion } from "./Explosion";
-import { EffectType } from "../../types/magic";
+import { EffectType } from "../../types/effect";
 
 export interface FireBallEffectProps {
   type: EffectType.FireBall;
@@ -35,9 +35,9 @@ export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
   >([]);
   const explosionKeyCounter = useRef(0);
   // TODO: 추후 삭제 예정
-  const caclcStartPosition = startPosition
-    .clone()
-    .add(direction.clone().multiplyScalar(1 + radius));
+  // const caclcStartPosition = startPosition
+  //   .clone()
+  //   .add(direction.clone().multiplyScalar(1 + radius));
 
   const handleExplosionFinish = useCallback(
     (key: number) => {
@@ -69,7 +69,7 @@ export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
     <>
       <FireBall
         type={type}
-        startPosition={caclcStartPosition}
+        startPosition={startPosition}
         direction={direction}
         speed={speed}
         duration={duration}
