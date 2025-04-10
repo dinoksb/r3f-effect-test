@@ -1,7 +1,15 @@
 import * as THREE from "three";
 import React, { useRef, useState, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import { DustEffectProps } from "./DustEffectController";
+import { EffectType } from "../../types/effect";
+export interface DustEffectProps {
+  type: EffectType.Dust;
+  startPosition: THREE.Vector3;
+  size?: number;
+  opacity?: number;
+  duration: number; // effect duration(ms)
+  onComplete?: () => void;
+}
 
 export const Dust: React.FC<DustEffectProps> = ({
   startPosition,

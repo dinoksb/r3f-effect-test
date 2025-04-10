@@ -8,4 +8,5 @@ export enum EffectType {
   AreaIndicator = "area-indicator",
   Bullet = "bullet",
   Dust = "dust",
+  Explosion = "explosion",
 }

@@ -1,12 +1,13 @@
 import React, { useRef, useMemo, useState, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { Sphere, Trail } from "@react-three/drei";
-import { Explosion } from "./Explosion";
+import { Trail } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { MeteorEffectProps } from "./MeteorEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionGroup } from "../../constants/collisionGroups";
+import { Explosion } from "./Explosion";
+import { EffectType } from "../../types/effect";
 
 /** ----------------------------
  *  1) 공통 시간 진행도 훅
@@ -40,66 +41,6 @@ function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
 
   return { progress, active };
 }
-
-/** ----------------------------
- *  2) ImpactEffect
- * ---------------------------- */
-interface ImpactEffectProps {
-  position: THREE.Vector3;
-  radius?: number;
-}
-const ImpactEffect: React.FC<ImpactEffectProps> = ({
-  position,
-  radius = 1,
-}) => {
-  const sphereRef = useRef<THREE.Mesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
-
-  // 기존 600ms 지속 (0~1)
-  const { progress } = useProgress(600);
-
-  useFrame(() => {
-    if (sphereRef.current) {
-      // 충돌 구체 크기 (progress = 0~1)
-      const scale = progress * radius;
-      sphereRef.current.scale.set(scale, scale, scale);
-
-      // opacity는 (1 - progress)^2로 점차 감소
-      const opacity = Math.pow(1 - progress, 2);
-      const mat = sphereRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = opacity;
-      mat.needsUpdate = true;
-    }
-
-    if (lightRef.current) {
-      // 광원의 밝기 점차 감소
-      lightRef.current.intensity = 10 * (1 - progress);
-    }
-  });
-
-  return (
-    <>
-      <Sphere ref={sphereRef} args={[1, 16, 16]} position={position}>
-        <meshBasicMaterial
-          color="#ff4400"
-          transparent
-          opacity={1}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </Sphere>
-      <pointLight
-        ref={lightRef}
-        position={position}
-        color="#ff4400"
-        intensity={10}
-        distance={15}
-        decay={2}
-      />
-    </>
-  );
-};
 
 /** ----------------------------
  *  3) Hitbox
@@ -314,8 +255,13 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
       {/* 임팩트 발생 시 (시각 이펙트 + 폭발 + Hitbox) */}
       {showImpact && !impactDone && (
         <>
-          <ImpactEffect position={targetPosition} radius={impactRadius} />
-          <Explosion position={targetPosition} />
+          <Explosion
+            type={EffectType.Explosion}
+            position={targetPosition}
+            duration={impactDuration}
+            radius={impactRadius}
+          />
+          {/* <ExplosionDust position={targetPosition} /> */}
           <Hitbox
             position={targetPosition}
             duration={impactDuration}

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
-import { Explosion } from "./Explosion";
+import { ExplosionDust } from "./ExplosionDust";
 import { EffectType } from "../../types/effect";
 
 export interface FireBallEffectProps {
@@ -81,7 +81,7 @@ export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
       />
 
       {explosions.map((ex) => (
-        <Explosion
+        <ExplosionDust
           key={ex.key}
           position={ex.pos}
           scale={radius * 0.6}

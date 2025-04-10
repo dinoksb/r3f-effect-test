@@ -163,6 +163,25 @@ export function Experience() {
             onComplete: () => onComplete(newKey),
           };
           break;
+        case EffectType.Dust:
+          magic = {
+            type: EffectType.Dust,
+            startPosition: startPosition,
+            size: 0.4,
+            opacity: 0.3,
+            duration: 500,
+            onComplete: () => onComplete(newKey),
+          };
+          break;
+        case EffectType.Explosion:
+          magic = {
+            type: EffectType.Explosion,
+            position: targetPosition,
+            duration: 500,
+            radius: 5,
+            onComplete: () => onComplete(newKey),
+          };
+          break;
       }
 
       if (!magic) return;
@@ -192,6 +211,8 @@ export function Experience() {
       if (e.key === "5") setSelectedMagic(EffectType.PoisonSwamp);
       if (e.key === "6") setSelectedMagic(EffectType.AreaIndicator);
       if (e.key === "7") setSelectedMagic(EffectType.Bullet);
+      if (e.key === "8") setSelectedMagic(EffectType.Dust);
+      if (e.key === "9") setSelectedMagic(EffectType.Explosion);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);

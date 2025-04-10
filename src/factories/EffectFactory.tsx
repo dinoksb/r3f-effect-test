@@ -28,10 +28,11 @@ import {
   BulletEffectProps,
   BulletEffectController,
 } from "../components/effects/BulletEffectController";
+import { Dust, DustEffectProps } from "../components/effects/Dust";
 import {
-  DustEffectController,
-  DustEffectProps,
-} from "../components/effects/DustEffectController";
+  Explosion,
+  ExplosionEffectProps,
+} from "../components/effects/Explosion";
 
 export type EffectProps =
   | FireBallEffectProps
@@ -41,7 +42,8 @@ export type EffectProps =
   | PoisonSwampEffectProps
   | AreaIndicatorEffectProps
   | BulletEffectProps
-  | DustEffectProps;
+  | DustEffectProps
+  | ExplosionEffectProps;
 
 export const MagicComponentMap = {
   [EffectType.FireBall]: FireBallEffectController,
@@ -51,7 +53,8 @@ export const MagicComponentMap = {
   [EffectType.PoisonSwamp]: PoisonSwampEffectController,
   [EffectType.AreaIndicator]: AreaIndicatorEffectController,
   [EffectType.Bullet]: BulletEffectController,
-  [EffectType.Dust]: DustEffectController,
+  [EffectType.Dust]: Dust,
+  [EffectType.Explosion]: Explosion,
 } as const;
 
 export class EffectFactory {
@@ -72,7 +75,9 @@ export class EffectFactory {
       case EffectType.Bullet:
         return <BulletEffectController {...props} />;
       case EffectType.Dust:
-        return <DustEffectController {...props} />;
+        return <Dust {...props} />;
+      case EffectType.Explosion:
+        return <Explosion {...props} />;
       default:
         console.warn(`[MagicFactory] Unknown magic type`);
         return null;
