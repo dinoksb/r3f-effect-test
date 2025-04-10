@@ -128,10 +128,10 @@ export function Experience() {
         case EffectType.PoisonSwamp:
           magic = {
             type: EffectType.PoisonSwamp,
-            duration: 26000,
+            duration: 2000,
             targetPosition: targetPosition,
             hitInterval: 0.5,
-            radius: 5,
+            radius: 3,
             height: 0,
             opacity: 0.8,
             onHit: onHit,
