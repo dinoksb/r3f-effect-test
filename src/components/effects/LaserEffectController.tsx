@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Laser } from "./Laser";
-import { EffectType } from "../../types/magic";
+import { EffectType } from "../../types/effect";
 import * as THREE from "three";
 
 export interface LaserEffectProps {
@@ -13,6 +13,7 @@ export interface LaserEffectProps {
   length: number;
   thickness: number;
   hitInterval: number;
+  excludeCollisionGroup?: number[];
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
@@ -25,6 +26,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
   length,
   thickness,
   hitInterval,
+  excludeCollisionGroup,
   onHit,
   onComplete,
 }) => {
@@ -92,6 +94,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
         length={length}
         thickness={thickness}
         hitInterval={hitInterval}
+        excludeCollisionGroup={excludeCollisionGroup}
         onHit={onHit}
         onComplete={onComplete}
       />

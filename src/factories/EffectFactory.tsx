@@ -19,11 +19,15 @@ import {
   PoisonSwampEffectController,
   PoisonSwampEffectProps,
 } from "../components/effects/PoisonSwampEffectController";
-import { EffectType } from "../types/magic";
+import { EffectType } from "../types/effect";
 import {
   AreaIndicatorEffectController,
   AreaIndicatorEffectProps,
 } from "../components/effects/AreaIndicatorEffectController";
+import {
+  BulletEffectProps,
+  BulletEffectController,
+} from "../components/effects/BulletEffectController";
 
 export type EffectProps =
   | FireBallEffectProps
@@ -31,7 +35,8 @@ export type EffectProps =
   | LightningEffectProps
   | MeteorEffectProps
   | PoisonSwampEffectProps
-  | AreaIndicatorEffectProps;
+  | AreaIndicatorEffectProps
+  | BulletEffectProps;
 
 export const MagicComponentMap = {
   [EffectType.FireBall]: FireBallEffectController,
@@ -40,6 +45,7 @@ export const MagicComponentMap = {
   [EffectType.Meteor]: MeteorEffectController,
   [EffectType.PoisonSwamp]: PoisonSwampEffectController,
   [EffectType.AreaIndicator]: AreaIndicatorEffectController,
+  [EffectType.Bullet]: BulletEffectController,
 } as const;
 
 export class EffectFactory {
@@ -57,6 +63,8 @@ export class EffectFactory {
         return <PoisonSwampEffectController {...props} />;
       case EffectType.AreaIndicator:
         return <AreaIndicatorEffectController {...props} />;
+      case EffectType.Bullet:
+        return <BulletEffectController {...props} />;
       default:
         console.warn(`[MagicFactory] Unknown magic type`);
         return null;

@@ -5,6 +5,8 @@ import { Sphere, Trail } from "@react-three/drei";
 import { Explosion } from "./Explosion";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { MeteorEffectProps } from "./MeteorEffectController";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
+import { CollisionGroup } from "../../constants/collisionGroups";
 
 /** ----------------------------
  *  1) 공통 시간 진행도 훅
@@ -106,12 +108,14 @@ interface HitboxProps {
   position: THREE.Vector3;
   duration: number;
   radius: number;
+  excludeCollisionGroup?: number[];
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   debug?: boolean;
 }
 const Hitbox: React.FC<HitboxProps> = ({
   position,
   duration,
+  excludeCollisionGroup,
   onHit,
   debug = false,
   radius,
@@ -123,6 +127,12 @@ const Hitbox: React.FC<HitboxProps> = ({
   useProgress(duration, 0, () => setDestroyed(true));
 
   if (destroyed) return null;
+
+  const collisionGroups =
+    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionGroup.Projectile,
+      excludeCollisionGroup
+    );
 
   return (
     <RigidBody
@@ -139,6 +149,7 @@ const Hitbox: React.FC<HitboxProps> = ({
         );
         onHit?.(other, hitPosition);
       }}
+      collisionGroups={collisionGroups}
     >
       <BallCollider args={[radius]} />
       {/* Debug 시각화 */}
@@ -171,6 +182,7 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
   radius,
   duration,
   startDelay,
+  excludeCollisionGroup,
   onHit,
   onComplete,
   debug = false,
@@ -307,9 +319,10 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
           <Hitbox
             position={targetPosition}
             duration={impactDuration}
+            radius={impactRadius}
+            excludeCollisionGroup={excludeCollisionGroup}
             onHit={onHit}
             debug={debug}
-            radius={impactRadius}
           />
         </>
       )}
@@ -332,6 +345,7 @@ export const Meteor: React.FC<MeteorProps> = ({
   targetPositions,
   duration,
   radius,
+  excludeCollisionGroup,
   onHit,
   onComplete,
   debug = false,
@@ -354,8 +368,8 @@ export const Meteor: React.FC<MeteorProps> = ({
           targetPosition={targetPos}
           duration={duration}
           radius={radius}
-          // 일정 간격 + 랜덤 딜레이
           startDelay={100 * index + Math.random() * 100}
+          excludeCollisionGroup={excludeCollisionGroup}
           onHit={onHit}
           onComplete={() => setImpactCount((prev) => prev + 1)}
           debug={debug}
