@@ -12,6 +12,92 @@ import { EffectFactory, EffectProps } from "../../factories/EffectFactory";
 import { EffectType } from "../../types/effect";
 import React from "react";
 import { CollisionGroup } from "../../constants/collisionGroups";
+import { useFrame } from "@react-three/fiber";
+
+// Circular moving sphere component
+const CircularSphere = ({
+  position,
+  radius = 5,
+  speed = 0.5,
+  dustInterval = 200,
+  verticalMotion = false,
+  verticalAmplitude = 1,
+  verticalFrequency = 1,
+  onCreateDust,
+}: {
+  position: THREE.Vector3;
+  radius?: number;
+  speed?: number;
+  dustInterval?: number;
+  verticalMotion?: boolean;
+  verticalAmplitude?: number;
+  verticalFrequency?: number;
+  onCreateDust: (position: THREE.Vector3) => void;
+}) => {
+  const meshRef = useRef<THREE.Mesh>(null!);
+  const lastDustTime = useRef(0);
+  const prevPosition = useRef(new THREE.Vector3());
+
+  useEffect(() => {
+    meshRef.current.position.set(position.x, position.y, position.z);
+  }, [position]);
+
+  useFrame(({ clock }) => {
+    const elapsedTime = clock.getElapsedTime();
+    const currentTime = clock.elapsedTime * 1000; // Convert to ms
+
+    // Calculate position on circle
+    const x = Math.cos(elapsedTime * speed) * radius;
+    const z = Math.sin(elapsedTime * speed) * radius;
+
+    // Add vertical sine motion if enabled
+    let y = position.y;
+    if (verticalMotion) {
+      y =
+        position.y +
+        Math.sin(elapsedTime * verticalFrequency) * verticalAmplitude;
+    }
+
+    // Update sphere position
+    if (meshRef.current) {
+      meshRef.current.position.x = x;
+      meshRef.current.position.z = z;
+      meshRef.current.position.y = y; // Using calculated y position
+
+      const currentPosition = new THREE.Vector3(x, y, z);
+
+      // Create dust effect every specified interval
+      if (currentTime - lastDustTime.current > dustInterval) {
+        lastDustTime.current = currentTime;
+
+        // For a circle, the direction of movement is perpendicular to the radius vector
+        // The tangent vector to the circle at point (x,z) is (-z,x) normalized
+        const movementDirection = new THREE.Vector3(-z, 0, x).normalize();
+
+        // Calculate the opposite direction
+        const oppositeDirection = movementDirection
+          .clone()
+          .multiplyScalar(-0.5);
+
+        // Position the dust behind the sphere in the opposite direction
+        const dustPosition = currentPosition.clone().add(oppositeDirection);
+
+        // Create dust at the calculated position
+        onCreateDust(dustPosition);
+      }
+
+      // Save current position for next frame
+      prevPosition.current.copy(currentPosition);
+    }
+  });
+
+  return (
+    <mesh ref={meshRef}>
+      <sphereGeometry args={[0.5, 32, 32]} />
+      <meshStandardMaterial color="hotpink" />
+    </mesh>
+  );
+};
 
 interface MagicEffect {
   key: number;
@@ -163,6 +249,20 @@ export function Experience() {
             onComplete: () => onComplete(newKey),
           };
           break;
+        case EffectType.Dust:
+          magic = {
+            type: EffectType.Dust,
+            startPosition: new THREE.Vector3(
+              startPosition.x,
+              startPosition.y - targetHeight * 0.5,
+              startPosition.z
+            ),
+            size: 0.1,
+            opacity: 0.5,
+            duration: 200,
+            onComplete: () => onComplete(newKey),
+          };
+          break;
       }
 
       if (!magic) return;
@@ -192,10 +292,49 @@ export function Experience() {
       if (e.key === "5") setSelectedMagic(EffectType.PoisonSwamp);
       if (e.key === "6") setSelectedMagic(EffectType.AreaIndicator);
       if (e.key === "7") setSelectedMagic(EffectType.Bullet);
+      if (e.key === "8") setSelectedMagic(EffectType.Dust);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
+  // Function to create dust at sphere position
+  const handleCreateDustGround = useCallback(
+    (position: THREE.Vector3) => {
+      const newKey = effectKeyCounter.current++;
+
+      const dustEffect: EffectProps = {
+        type: EffectType.Dust,
+        startPosition: position,
+        size: 0.3,
+        opacity: 0.2,
+        duration: 800,
+        onComplete: () => handleMagicEffectComplete(newKey),
+      };
+
+      setMagicEffects((prev) => [...prev, { key: newKey, magic: dustEffect }]);
+    },
+    [handleMagicEffectComplete]
+  );
+
+  const handleCreateDustSky = useCallback(
+    (position: THREE.Vector3) => {
+      const newKey = effectKeyCounter.current++;
+      const positionY = position.y;
+
+      const dustEffect: EffectProps = {
+        type: EffectType.Dust,
+        startPosition: new THREE.Vector3(position.x, positionY, position.z),
+        size: 0.3,
+        opacity: 0.2,
+        duration: 800,
+        onComplete: () => handleMagicEffectComplete(newKey),
+      };
+
+      setMagicEffects((prev) => [...prev, { key: newKey, magic: dustEffect }]);
+    },
+    [handleMagicEffectComplete]
+  );
 
   return (
     <>
@@ -214,6 +353,30 @@ export function Experience() {
       />
 
       <ambientLight intensity={0.7} />
+
+      {/* Add spheres with different movement patterns */}
+      <CircularSphere
+        speed={0.5}
+        position={new THREE.Vector3(0, 0, 0)}
+        onCreateDust={handleCreateDustGround}
+      />
+      {/* <CircularSphere
+        radius={7}
+        speed={1}
+        dustInterval={100}
+        position={new THREE.Vector3(0, 5, 0)}
+        onCreateDust={handleCreateDustSky}
+      /> */}
+      <CircularSphere
+        radius={3}
+        speed={2}
+        dustInterval={150}
+        position={new THREE.Vector3(0, 3, 0)}
+        verticalMotion={true}
+        verticalAmplitude={1}
+        verticalFrequency={3}
+        onCreateDust={handleCreateDustSky}
+      />
 
       <Physics debug={false} paused={pausedPhysics}>
         <KeyboardControls map={keyboardMap}>
@@ -246,14 +409,12 @@ export function Experience() {
           </FreeViewController>
         </KeyboardControls>
 
-        <RandomBoxes count={20} range={10} />
+        {/* <RandomBoxes count={20} range={10} /> */}
         <Floor />
 
         {magicEffects.map((effect) => (
           <React.Fragment key={effect.key}>
-            {EffectFactory.create({
-              ...effect.magic,
-            })}
+            {EffectFactory.create(effect.magic)}
           </React.Fragment>
         ))}
       </Physics>
