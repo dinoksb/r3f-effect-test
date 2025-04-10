@@ -6,7 +6,7 @@ import { EffectType } from "../../types/magic";
 export interface PoisonSwampEffectProps {
   type: EffectType.PoisonSwamp;
   targetPosition: THREE.Vector3;
-  duration: number;
+  duration: number; // effect duration(ms)
   hitInterval: number;
   radius: number;
   height: number;

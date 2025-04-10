@@ -9,7 +9,7 @@ export interface LaserEffectProps {
     position: THREE.Vector3;
     direction: THREE.Vector3;
   }>;
-  duration: number;
+  duration: number; // effect duration(ms)
   length: number;
   thickness: number;
   hitInterval: number;

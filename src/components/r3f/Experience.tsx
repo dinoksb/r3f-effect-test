@@ -11,7 +11,6 @@ import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { EffectFactory, EffectProps } from "../../factories/EffectFactory";
 import { EffectType } from "../../types/magic";
 import React from "react";
-// import { AreaIndicatorEffectController } from "../effects/AreaIndicatorEffectController";
 
 interface MagicEffect {
   key: number;

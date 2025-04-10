@@ -6,7 +6,7 @@ export interface AreaIndicatorEffectProps {
   type: EffectType.AreaIndicator;
   targetPosition: THREE.Vector3;
   radius: number;
-  duration?: number;
+  duration?: number; // effect duration(ms)
   onComplete?: () => void;
 }
 

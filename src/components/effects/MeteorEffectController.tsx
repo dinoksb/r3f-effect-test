@@ -11,7 +11,7 @@ export interface MeteorEffectProps {
   targetPosition: THREE.Vector3;
   count: number;
   radius: number;
-  duration: number;
+  duration: number; // effect duration(ms)
   spread: number;
   rayOriginYOffset: number;
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;

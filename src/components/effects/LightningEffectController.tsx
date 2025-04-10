@@ -9,7 +9,7 @@ import { EffectType } from "../../types/magic";
 export interface LightningEffectProps {
   type: EffectType.Lightning;
   targetPosition: THREE.Vector3;
-  duration: number;
+  duration: number; // effect duration(ms)
   strikeCount: number;
   spread: number;
   rayOriginYOffset: number;

@@ -9,7 +9,7 @@ export interface FireBallEffectProps {
   speed: number;
   startPosition: THREE.Vector3;
   direction: THREE.Vector3;
-  duration: number;
+  duration: number; // effect duration(ms)
   radius?: number;
   excludeCollisionGroup?: number[];
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
