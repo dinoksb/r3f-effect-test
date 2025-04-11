@@ -81,10 +81,7 @@ export function Experience() {
             startPosition,
             direction,
             radius: 0.5,
-            excludeCollisionGroup: [
-              CollisionBitmask.My,
-              CollisionBitmask.Character,
-            ],
+            excludeCollisionGroup: [CollisionBitmask.Player],
             onHit: handleEffectHit,
             onComplete: () => handleMagicEffectComplete(newKey),
           };
@@ -97,7 +94,7 @@ export function Experience() {
             length: 10,
             thickness: 0.3,
             hitInterval: 500,
-            excludeCollisionGroup: [CollisionBitmask.Character],
+            excludeCollisionGroup: [CollisionBitmask.Player],
             onHit: handleEffectHit,
             onComplete: () => handleMagicEffectComplete(newKey),
           };
@@ -110,10 +107,7 @@ export function Experience() {
             strikeCount: 5,
             spread: 1,
             rayOriginYOffset: 15,
-            excludeCollisionGroup: [
-              CollisionBitmask.My,
-              CollisionBitmask.Character,
-            ],
+            excludeCollisionGroup: [CollisionBitmask.Player],
             onHit: handleEffectHit,
             onComplete: () => handleMagicEffectComplete(newKey),
           };
@@ -127,10 +121,7 @@ export function Experience() {
             rayOriginYOffset: 15,
             duration: 2000,
             targetPosition: targetPosition,
-            excludeCollisionGroup: [
-              CollisionBitmask.My,
-              CollisionBitmask.Character,
-            ],
+            excludeCollisionGroup: [CollisionBitmask.Player],
             onHit: handleEffectHit,
             onImpact: handleMagicEffectImpact,
             onComplete: () => handleMagicEffectComplete(newKey),
@@ -145,10 +136,7 @@ export function Experience() {
             radius: 3,
             height: 0,
             opacity: 0.8,
-            excludeCollisionGroup: [
-              CollisionBitmask.My,
-              CollisionBitmask.Character,
-            ],
+            excludeCollisionGroup: [CollisionBitmask.Player],
             onHit: handleEffectHit,
             onComplete: () => handleMagicEffectComplete(newKey),
           };
@@ -169,10 +157,7 @@ export function Experience() {
             startPosition: startPosition,
             direction: direction,
             size: new THREE.Vector3(0.5, 0.5, 1),
-            excludeCollisionGroup: [
-              CollisionBitmask.My,
-              CollisionBitmask.Character,
-            ],
+            excludeCollisionGroup: [CollisionBitmask.Player],
             onHit: handleEffectHit,
             onComplete: () => handleMagicEffectComplete(newKey),
           };

@@ -285,8 +285,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
           .collider(i)
           .setCollisionGroups(
             RigidBodyCollisionSystem.setupRigidBodyCollisionGroups([
-              CollisionBitmask.My,
-              CollisionBitmask.Character,
+              CollisionBitmask.Player,
             ])
           );
       }

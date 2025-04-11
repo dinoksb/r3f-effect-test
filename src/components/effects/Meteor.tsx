@@ -238,7 +238,7 @@ const Hitbox: React.FC<HitboxProps> = ({
         onHit?.(other);
       }}
       collisionGroups={RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-        CollisionBitmask.Projectile,
+        CollisionBitmask.AOE,
         excludeCollisionGroup
       )}
     >
