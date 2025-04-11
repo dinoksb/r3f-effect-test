@@ -13,9 +13,6 @@ import { MeteorEffectProps } from "./MeteorEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 
-/** ----------------------------
- *  1) 공통 시간 진행도 훅
- * ---------------------------- */
 function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   const [progress, setProgress] = useState(0);
   // startDelay > 0이면, 해당 시간이 지난 후에 활성화
@@ -45,57 +42,6 @@ function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
 
   return { progress, active };
 }
-
-// /** ----------------------------
-//  *  2) Meteor
-//  * ---------------------------- */
-// type MeteorProps = Omit<
-//   MeteorEffectProps,
-//   "targetPosition" | "count" | "spread" | "rayOriginYOffset"
-// > & {
-//   startPosition: THREE.Vector3;
-//   targetPositions: THREE.Vector3[];
-// };
-// export const Meteor: React.FC<MeteorProps> = ({
-//   type,
-//   startPosition,
-//   targetPositions,
-//   duration,
-//   radius,
-//   excludeCollisionGroup,
-//   onHit,
-//   onComplete,
-//   debug = false,
-// }) => {
-//   // const [impactCount, setImpactCount] = useState(0);
-
-//   // useEffect(() => {
-//   //   // if (impactCount === targetPositions.length) {
-//   //   //   console.log("Meteor onComplete");
-//   //   //   onComplete?.();
-//   //   // }
-//   // }, [impactCount, targetPositions.length, onComplete]);
-
-//   return (
-//     <>
-//       {targetPositions.map((targetPos, index) => (
-//         <SingleMeteor
-//           type={type}
-//           startPosition={startPosition}
-//           targetPosition={targetPos}
-//           duration={duration}
-//           radius={radius}
-//           startDelay={100 * index + Math.random() * 100}
-//           excludeCollisionGroup={excludeCollisionGroup}
-//           onHit={onHit}
-//           onImpact={onComplete}
-//           onComplete={onComplete}
-//           debug={debug}
-//         />
-//       ))}
-//     </>
-//   );
-// };
 
 type MeteorProps = Omit<
   MeteorEffectProps,
@@ -241,23 +187,14 @@ export const Meteor: React.FC<MeteorProps> = ({
 
       {/* 임팩트 발생 시 (시각 이펙트 + 폭발 + Hitbox) */}
       {showImpact && (
-        <>
-          {/* <Explosion
-            type={EffectType.Explosion}
-            position={targetPosition}
-            duration={impactDuration}
-            radius={impactRadius}
-          /> */}
-          {/* <ExplosionDust position={targetPosition} /> */}
-          <Hitbox
-            position={targetPosition}
-            duration={impactDuration}
-            radius={impactRadius}
-            excludeCollisionGroup={excludeCollisionGroup}
-            onHit={handleOnHit}
-            debug={debug}
-          />
-        </>
+        <Hitbox
+          position={targetPosition}
+          duration={impactDuration}
+          radius={impactRadius}
+          excludeCollisionGroup={excludeCollisionGroup}
+          onHit={handleOnHit}
+          debug={debug}
+        />
       )}
     </>
   );

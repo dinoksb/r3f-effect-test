@@ -42,15 +42,6 @@ export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
         onComplete={onComplete}
         debug={debug}
       />
-
-      {/* {explosions.map((ex) => (
-        <ExplosionDust
-          key={ex.key}
-          position={ex.pos}
-          scale={radius * 0.6}
-          onComplete={() => handleExplosionFinish(ex.key)}
-        />
-      ))} */}
     </>
   );
 };

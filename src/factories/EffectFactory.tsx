@@ -78,9 +78,6 @@ export class EffectFactory {
         return <Dust {...props} />;
       case EffectType.Explosion:
         return <Explosion {...props} />;
-      default:
-        console.warn(`[MagicFactory] Unknown magic type`);
-        return null;
     }
   }
 }
