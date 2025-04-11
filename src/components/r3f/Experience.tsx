@@ -115,7 +115,7 @@ export function Experience() {
         case EffectType.Meteor:
           magic = {
             type: EffectType.Meteor,
-            count: 6,
+            count: 1,
             radius: 3,
             spread: 10,
             rayOriginYOffset: 15,
