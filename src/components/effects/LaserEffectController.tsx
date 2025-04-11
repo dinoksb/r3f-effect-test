@@ -13,8 +13,8 @@ export interface LaserEffectProps {
   length: number;
   thickness: number;
   hitInterval: number;
-  excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  excludeCollisionGroup?: number | number[];
+  onHit?: (other?: unknown, type?: EffectType, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
 }

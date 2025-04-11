@@ -15,12 +15,14 @@ export interface MeteorEffectProps {
   spread: number;
   rayOriginYOffset: number;
   excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onHit?: (other: unknown, type: EffectType, pos: THREE.Vector3) => void;
+  onImpact?: (type: EffectType, pos: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
 }
 
 export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
+  type,
   targetPosition,
   count,
   duration,
@@ -29,10 +31,12 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
   rayOriginYOffset,
   excludeCollisionGroup,
   onHit,
+  onImpact,
   onComplete,
   debug = false,
 }) => {
   const { world } = useRapier();
+  const [meteorCompleteCount, setMeteorCompleteCount] = useState(0);
   const [targetPositions, setTargetPositions] = useState<THREE.Vector3[]>([]);
   const [calculatedStartPosition, setCalculatedStartPosition] =
     useState<THREE.Vector3>();
@@ -111,18 +115,35 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
     initializedRef.current = true;
   }, [count, spread, rayOriginYOffset, targetPosition, world]);
 
+  const onHandleMeteorsComplete = () => {
+    console.log("Meteors onComplete");
+    setMeteorCompleteCount((prev) => prev + 1);
+    onImpact?.(type, targetPositions[meteorCompleteCount]);
+    if (meteorCompleteCount === targetPositions.length) {
+      onComplete?.();
+    }
+  };
+
   if (!calculatedStartPosition || targetPositions.length === 0) return null;
 
   return (
-    <Meteor
-      startPosition={calculatedStartPosition}
-      targetPositions={targetPositions}
-      radius={radius}
-      duration={duration}
-      excludeCollisionGroup={excludeCollisionGroup}
-      onHit={onHit}
-      onComplete={onComplete}
-      debug={debug}
-    />
+    <>
+      {targetPositions.map((targetPos, index) => (
+        <Meteor
+          key={index}
+          type={type}
+          startPosition={calculatedStartPosition}
+          targetPosition={targetPos}
+          radius={radius}
+          duration={duration}
+          excludeCollisionGroup={excludeCollisionGroup}
+          onHit={onHit}
+          onImpact={onImpact}
+          onComplete={onHandleMeteorsComplete}
+          startDelay={100 * index + Math.random() * 100}
+          debug={debug}
+        />
+      ))}
+    </>
   );
 };

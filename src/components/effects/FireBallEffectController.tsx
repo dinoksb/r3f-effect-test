@@ -1,7 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
-import { ExplosionDust } from "./ExplosionDust";
 import { EffectType } from "../../types/effect";
 
 export interface FireBallEffectProps {
@@ -11,8 +9,9 @@ export interface FireBallEffectProps {
   direction: THREE.Vector3;
   duration: number; // effect duration(ms)
   radius?: number;
-  excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  excludeCollisionGroup?: number | number[];
+  onHit?: (other?: unknown, type?: EffectType, pos?: THREE.Vector3) => void;
+  onImpact?: (type: EffectType, pos: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
 }
@@ -29,42 +28,6 @@ export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
   onComplete,
   debug = false,
 }) => {
-  const [spawned, setSpawned] = useState(false);
-  const [explosions, setExplosions] = useState<
-    { key: number; pos: [number, number, number] }[]
-  >([]);
-  const explosionKeyCounter = useRef(0);
-  // TODO: 추후 삭제 예정
-  // const caclcStartPosition = startPosition
-  //   .clone()
-  //   .add(direction.clone().multiplyScalar(1 + radius));
-
-  const handleExplosionFinish = useCallback(
-    (key: number) => {
-      setExplosions((prev) => prev.filter((ex) => ex.key !== key));
-      onComplete?.();
-    },
-    [onComplete]
-  );
-
-  const handleFireBallHit = (other: unknown, pos: THREE.Vector3) => {
-    explosionKeyCounter.current++;
-    setExplosions((prev) => [
-      ...prev,
-      {
-        key: explosionKeyCounter.current,
-        pos: [pos.x, pos.y, pos.z],
-      },
-    ]);
-    onHit?.(other, pos);
-  };
-
-  useEffect(() => {
-    setSpawned(true);
-  }, []);
-
-  if (!spawned) return null;
-
   return (
     <>
       <FireBall
@@ -75,19 +38,19 @@ export const FireBallEffectController: React.FC<FireBallEffectProps> = ({
         duration={duration}
         radius={radius}
         excludeCollisionGroup={excludeCollisionGroup}
-        onHit={handleFireBallHit}
+        onHit={onHit}
         onComplete={onComplete}
         debug={debug}
       />
 
-      {explosions.map((ex) => (
+      {/* {explosions.map((ex) => (
         <ExplosionDust
           key={ex.key}
           position={ex.pos}
           scale={radius * 0.6}
           onComplete={() => handleExplosionFinish(ex.key)}
         />
-      ))}
+      ))} */}
     </>
   );
 };

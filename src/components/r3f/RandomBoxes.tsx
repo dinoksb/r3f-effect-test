@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import * as THREE from "three";
 import { Box } from "@react-three/drei";
 import { RigidBody } from "@react-three/rapier";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 type RandomBoxProps = {
@@ -33,8 +33,7 @@ export const RandomBoxes: React.FC<RandomBoxProps> = ({
           type="dynamic"
           colliders="cuboid"
           collisionGroups={RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-            CollisionGroup.Box,
-            []
+            CollisionBitmask.Box
           )}
         >
           <Box position={pos.toArray()} args={[1, 1, 1]} scale={[1, 3, 1]}>

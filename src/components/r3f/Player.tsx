@@ -13,7 +13,7 @@ import {
   CharacterRenderer,
   CharacterRendererRef,
 } from "vibe-starter-3d/dist/src/components/renderers/CharacterRenderer";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 /**
@@ -284,10 +284,10 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
         rigidBody
           .collider(i)
           .setCollisionGroups(
-            RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-              CollisionGroup.Player,
-              []
-            )
+            RigidBodyCollisionSystem.setupRigidBodyCollisionGroups([
+              CollisionBitmask.My,
+              CollisionBitmask.Character,
+            ])
           );
       }
 

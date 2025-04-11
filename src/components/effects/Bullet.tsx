@@ -2,11 +2,12 @@ import * as THREE from "three";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { BulletEffectProps } from "./BulletEffectController";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
 
 export const Bullet: React.FC<BulletEffectProps> = ({
+  type,
   startPosition,
   direction,
   speed,
@@ -102,7 +103,7 @@ export const Bullet: React.FC<BulletEffectProps> = ({
   // RigidBody를 위한 충돌 그룹 계산
   const collisionGroups =
     RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionGroup.Projectile,
+      CollisionBitmask.Projectile,
       excludeCollisionGroup
     );
 
@@ -122,15 +123,8 @@ export const Bullet: React.FC<BulletEffectProps> = ({
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
           : undefined;
-
-        console.log(
-          "Bullet hit:",
-          other.rigidBodyObject?.name || "unnamed object"
-        );
-
         // 충돌 이벤트 발생
-        if (onHit) onHit(other, hitPosition);
-
+        if (onHit) onHit(other, type, hitPosition);
         // 총알 제거
         removeBullet();
       }}

@@ -12,7 +12,7 @@ export interface PoisonSwampEffectProps {
   height: number;
   opacity: number;
   excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onHit?: (other?: unknown, type?: EffectType, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
 }

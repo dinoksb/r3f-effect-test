@@ -11,7 +11,7 @@ export interface BulletEffectProps {
   size: THREE.Vector3;
   duration: number; // effect duration(ms)
   excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onHit?: (other?: unknown, type?: EffectType, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
 }

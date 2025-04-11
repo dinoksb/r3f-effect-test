@@ -1,6 +1,7 @@
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { Experience } from './Experience';
+import React, { Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Experience } from "./Experience";
+import WebGLVersionChecker from "../../WebGLVersionChecker";
 
 /**
  * Main game scene component
@@ -19,6 +20,7 @@ export const GameScene: React.FC = () => {
       >
         <Suspense fallback={null}>
           <Experience />
+          <WebGLVersionChecker />
         </Suspense>
       </Canvas>
     </>

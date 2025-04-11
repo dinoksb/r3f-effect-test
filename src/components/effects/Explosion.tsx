@@ -48,6 +48,7 @@ export const Explosion: React.FC<ExplosionEffectProps> = ({
 
     // 수명이 다하면 상위에서 제거되도록
     if (elapsed > duration) {
+      console.log("Explosion complete");
       onComplete?.();
     }
   });

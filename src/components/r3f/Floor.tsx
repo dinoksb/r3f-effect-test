@@ -1,19 +1,15 @@
 import { RigidBody } from "@react-three/rapier";
-import {} from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
+import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 export function Floor() {
   return (
     <RigidBody
       type="fixed"
       colliders="trimesh"
-      // collisionGroups={createCollisionGroup(
-      //   CollisionGroup.Ground,
-      //   CollisionGroup.Projectile
-      // )}
-      // collisionGroups={interactionGroups(CollisionGroup.Ground, [
-      //   CollisionGroup.Player,
-      //   CollisionGroup.Box,
-      // ])}
+      collisionGroups={RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+        CollisionBitmask.Ground
+      )}
     >
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0, 0]}>
         <planeGeometry name="floor-geometry" args={[100, 100]} />

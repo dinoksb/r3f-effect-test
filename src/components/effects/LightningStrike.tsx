@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { Tube, Ring } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 
 interface LightningStrikeProps {
   commonStartPosition: THREE.Vector3; // Receive the fixed start position
@@ -281,7 +281,7 @@ const Hitbox: React.FC<HitboxProps> = ({
 
   const collisionGroups =
     RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionGroup.AOE,
+      CollisionBitmask.AOE,
       excludeCollisionGroup
     );
 

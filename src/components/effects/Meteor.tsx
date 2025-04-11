@@ -1,13 +1,17 @@
-import React, { useRef, useMemo, useState, useEffect } from "react";
+import React, {
+  useRef,
+  useMemo,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Trail } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
 import { MeteorEffectProps } from "./MeteorEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
-import { CollisionGroup } from "../../constants/collisionGroups";
-import { Explosion } from "./Explosion";
-import { EffectType } from "../../types/effect";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 
 /** ----------------------------
  *  1) 공통 시간 진행도 훅
@@ -42,82 +46,68 @@ function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   return { progress, active };
 }
 
-/** ----------------------------
- *  3) Hitbox
- * ---------------------------- */
-interface HitboxProps {
-  position: THREE.Vector3;
-  duration: number;
-  radius: number;
-  excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
-  debug?: boolean;
-}
-const Hitbox: React.FC<HitboxProps> = ({
-  position,
-  duration,
-  excludeCollisionGroup,
-  onHit,
-  debug = false,
-  radius,
-}) => {
-  const rigidRef = useRef(null);
-  const [destroyed, setDestroyed] = useState(false);
+// /** ----------------------------
+//  *  2) Meteor
+//  * ---------------------------- */
+// type MeteorProps = Omit<
+//   MeteorEffectProps,
+//   "targetPosition" | "count" | "spread" | "rayOriginYOffset"
+// > & {
+//   startPosition: THREE.Vector3;
+//   targetPositions: THREE.Vector3[];
+// };
+// export const Meteor: React.FC<MeteorProps> = ({
+//   type,
+//   startPosition,
+//   targetPositions,
+//   duration,
+//   radius,
+//   excludeCollisionGroup,
+//   onHit,
+//   onComplete,
+//   debug = false,
+// }) => {
+//   // const [impactCount, setImpactCount] = useState(0);
 
-  // duration이 끝나면 onDone -> setDestroyed(true)
-  useProgress(duration, 0, () => setDestroyed(true));
+//   // useEffect(() => {
+//   //   // if (impactCount === targetPositions.length) {
+//   //   //   console.log("Meteor onComplete");
+//   //   //   onComplete?.();
+//   //   // }
+//   // }, [impactCount, targetPositions.length, onComplete]);
 
-  if (destroyed) return null;
+//   return (
+//     <>
+//       {targetPositions.map((targetPos, index) => (
+//         <SingleMeteor
+//           type={type}
+//           startPosition={startPosition}
+//           targetPosition={targetPos}
+//           duration={duration}
+//           radius={radius}
+//           startDelay={100 * index + Math.random() * 100}
+//           excludeCollisionGroup={excludeCollisionGroup}
+//           onHit={onHit}
+//           onImpact={onComplete}
+//           onComplete={onComplete}
+//           debug={debug}
+//         />
+//       ))}
+//     </>
+//   );
+// };
 
-  const collisionGroups =
-    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionGroup.Projectile,
-      excludeCollisionGroup
-    );
-
-  return (
-    <RigidBody
-      ref={rigidRef}
-      type="fixed"
-      colliders={false}
-      sensor={true}
-      position={[position.x, position.y, position.z]}
-      onIntersectionEnter={(other) => {
-        const hitPosition = new THREE.Vector3(
-          position.x,
-          position.y,
-          position.z
-        );
-        onHit?.(other, hitPosition);
-      }}
-      collisionGroups={collisionGroups}
-    >
-      <BallCollider args={[radius]} />
-      {/* Debug 시각화 */}
-      {debug && (
-        <mesh>
-          <sphereGeometry args={[radius, 16, 16]} />
-          <meshBasicMaterial
-            color="#ff00ff"
-            transparent
-            opacity={0.3}
-            wireframe={true}
-          />
-        </mesh>
-      )}
-    </RigidBody>
-  );
-};
-
-/** ----------------------------
- *  4) SingleMeteor
- * ---------------------------- */
-type SingleMeteorProps = Omit<MeteorProps, "targetPositions"> & {
+type MeteorProps = Omit<
+  MeteorEffectProps,
+  "targetPositions" | "count" | "spread" | "rayOriginYOffset"
+> & {
+  startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
   startDelay: number;
 };
 
-const SingleMeteor: React.FC<SingleMeteorProps> = ({
+export const Meteor: React.FC<MeteorProps> = ({
+  type,
   startPosition,
   targetPosition,
   radius,
@@ -133,7 +123,6 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
   const lightRef = useRef<THREE.PointLight>(null);
 
   const [showImpact, setShowImpact] = useState(false);
-  const [impactDone, setImpactDone] = useState(false);
 
   // duration 동안 0~1 로 증가하는 progress / 활성화 여부 active
   const { progress, active } = useProgress(duration, startDelay);
@@ -152,9 +141,18 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
     return targetPosition.clone().sub(startPosition);
   }, [startPosition, targetPosition]);
 
+  // 충돌 이벤트 처리
+  const handleOnHit = useCallback(
+    (other: unknown) => {
+      console.log("Meteor onHit", other, type, targetPosition);
+      onHit?.(other, type, targetPosition);
+    },
+    [onHit, type, targetPosition]
+  );
+
   useFrame(() => {
     // 아직 시작 전이거나, 이미 임팩트 끝나면 무시
-    if (!active || impactDone) return;
+    if (!active) return;
 
     // 0~1 사이의 progress만큼 위치 보간
     const currentPosition = startPosition
@@ -188,21 +186,10 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
     // 타겟 근처 도달 시 임팩트 이펙트 시작
     if (!showImpact && currentPosition.distanceTo(targetPosition) < 0.3) {
       setShowImpact(true);
+      onComplete?.();
     }
   });
 
-  // 임팩트 이펙트가 시작되면, impactDuration후에 Meteor/이펙트 종료
-  useEffect(() => {
-    if (showImpact && !impactDone) {
-      const timer = setTimeout(() => {
-        setImpactDone(true);
-        onComplete?.();
-      }, impactDuration);
-      return () => clearTimeout(timer);
-    }
-  }, [showImpact, impactDone, onComplete, impactDuration]);
-
-  // 아직 활성화 전이면 렌더 X
   if (!active) return null;
 
   return (
@@ -253,21 +240,21 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
       )}
 
       {/* 임팩트 발생 시 (시각 이펙트 + 폭발 + Hitbox) */}
-      {showImpact && !impactDone && (
+      {showImpact && (
         <>
-          <Explosion
+          {/* <Explosion
             type={EffectType.Explosion}
             position={targetPosition}
             duration={impactDuration}
             radius={impactRadius}
-          />
+          /> */}
           {/* <ExplosionDust position={targetPosition} /> */}
           <Hitbox
             position={targetPosition}
             duration={impactDuration}
             radius={impactRadius}
             excludeCollisionGroup={excludeCollisionGroup}
-            onHit={onHit}
+            onHit={handleOnHit}
             debug={debug}
           />
         </>
@@ -277,50 +264,60 @@ const SingleMeteor: React.FC<SingleMeteorProps> = ({
 };
 
 /** ----------------------------
- *  5) Meteor
+ *  4) Hitbox
  * ---------------------------- */
-type MeteorProps = Omit<
-  MeteorEffectProps,
-  "type" | "targetPosition" | "count" | "spread" | "rayOriginYOffset"
-> & {
-  startPosition: THREE.Vector3;
-  targetPositions: THREE.Vector3[];
-};
-export const Meteor: React.FC<MeteorProps> = ({
-  startPosition,
-  targetPositions,
+interface HitboxProps {
+  position: THREE.Vector3;
+  duration: number;
+  radius: number;
+  excludeCollisionGroup?: number[];
+  onHit?: (other?: unknown) => void;
+  debug?: boolean;
+}
+const Hitbox: React.FC<HitboxProps> = ({
+  position,
   duration,
-  radius,
   excludeCollisionGroup,
   onHit,
-  onComplete,
   debug = false,
+  radius,
 }) => {
-  const [impactCount, setImpactCount] = useState(0);
+  const rigidRef = useRef(null);
+  const [destroyed, setDestroyed] = useState(false);
 
-  // 모든 meteor가 임팩트를 마치면 onComplete
-  useEffect(() => {
-    if (impactCount === targetPositions.length) {
-      onComplete?.();
-    }
-  }, [impactCount, targetPositions.length, onComplete]);
+  // duration이 끝나면 onDone -> setDestroyed(true)
+  useProgress(duration, 0, () => setDestroyed(true));
+
+  if (destroyed) return null;
 
   return (
-    <>
-      {targetPositions.map((targetPos, index) => (
-        <SingleMeteor
-          key={index}
-          startPosition={startPosition}
-          targetPosition={targetPos}
-          duration={duration}
-          radius={radius}
-          startDelay={100 * index + Math.random() * 100}
-          excludeCollisionGroup={excludeCollisionGroup}
-          onHit={onHit}
-          onComplete={() => setImpactCount((prev) => prev + 1)}
-          debug={debug}
-        />
-      ))}
-    </>
+    <RigidBody
+      ref={rigidRef}
+      type="fixed"
+      colliders={false}
+      sensor={true}
+      position={[position.x, position.y, position.z]}
+      onIntersectionEnter={(other) => {
+        onHit?.(other);
+      }}
+      collisionGroups={RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+        CollisionBitmask.Projectile,
+        excludeCollisionGroup
+      )}
+    >
+      <BallCollider args={[radius]} />
+      {/* Debug 시각화 */}
+      {debug && (
+        <mesh>
+          <sphereGeometry args={[radius, 16, 16]} />
+          <meshBasicMaterial
+            color="#ff00ff"
+            transparent
+            opacity={0.3}
+            wireframe={true}
+          />
+        </mesh>
+      )}
+    </RigidBody>
   );
 };

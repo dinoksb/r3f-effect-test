@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CollisionGroup } from "../constants/collisionGroups";
+import { CollisionBitmask } from "../constants/collisionGroups";
 
 /**
  * 통합 충돌 시스템:
@@ -16,49 +16,33 @@ export class RigidBodyCollisionSystem {
    */
   static isInCollisionGroup(
     object: THREE.Object3D,
-    collisionGroup: CollisionGroup
+    collisionGroup: CollisionBitmask
   ): boolean {
     return object.userData.collisionGroup === collisionGroup;
   }
 
-  /**
-   * RigidBody 컴포넌트를 위한 충돌 그룹 값 생성
-   *
-   * @param collisionGroup 충돌 그룹
-   * @param excludeGroups 제외할 충돌 그룹
-   * @returns 생성된 충돌 그룹 값
-   */
   static setupRigidBodyCollisionGroups(
-    collisionGroup: CollisionGroup,
-    excludeGroups: CollisionGroup[] | CollisionGroup | undefined
+    memberships: number | number[] | null | undefined,
+    excludeFilter?: number | number[] | null
   ): number {
-    const excludeArray = Array.isArray(excludeGroups)
-      ? excludeGroups
-      : excludeGroups
-      ? [excludeGroups]
-      : [];
+    // 입력값(숫자, 배열, null/undefined)을 처리하여 단일 비트마스크로 반환하는 헬퍼 함수
+    const processInput = (
+      input: number | number[] | null | undefined
+    ): number => {
+      if (Array.isArray(input)) {
+        return input.reduce((acc, val) => acc | Number(val), 0);
+      } else if (typeof input === "number") {
+        return input;
+      }
+      return 0;
+    };
 
-    return RigidBodyCollisionSystem.createCollisionGroups(
-      collisionGroup,
-      excludeArray
-    );
-  }
+    const combinedMemberships = processInput(memberships);
+    const combinedExcludeFilter = processInput(excludeFilter);
 
-  /**
-   * Generates a collision group bitmask for a RigidBody.
-   *
-   * @param membership - The group this object belongs to (one or more CollisionGroup values combined using bitwise OR).
-   * @param exclude - An array of CollisionGroup values that this object should *not* collide with.
-   * @returns A 32-bit integer representing the collisionGroups mask (16 bits for membership, 16 bits for filter).
-   *
-   * The returned mask is structured as follows:
-   * - Upper 16 bits: groups this object belongs to (membership)
-   * - Lower 16 bits: groups this object can collide with (filter)
-   */
-  private static createCollisionGroups(membership: number, exclude: number[]) {
-    const ALL = 0xffff; // All 16 bits set to 1 (allow collision with all groups by default)
-    const excludeMask = exclude.reduce((mask, g) => mask | g, 0); // Combine all groups to exclude
-    const filter = ALL & ~excludeMask; // Remove excluded groups from filter
-    return (membership << 16) | filter; // Combine membership and filter into a single bitmask
+    const allInteractionGroupsMask = 0xffff;
+    const filter = allInteractionGroupsMask & ~combinedExcludeFilter;
+
+    return (combinedMemberships << 16) | filter;
   }
 }

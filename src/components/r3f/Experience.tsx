@@ -11,11 +11,11 @@ import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { EffectFactory, EffectProps } from "../../factories/EffectFactory";
 import { EffectType } from "../../types/effect";
 import React from "react";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 
-interface MagicEffect {
+interface Effect {
   key: number;
-  magic: EffectProps;
+  effect: EffectProps;
 }
 
 export function Experience() {
@@ -35,7 +35,7 @@ export function Experience() {
 
   const targetHeight = 1.6;
 
-  const [magicEffects, setMagicEffects] = useState<MagicEffect[]>([]);
+  const [magicEffects, setMagicEffects] = useState<Effect[]>([]);
   const [selectedMagic, setSelectedMagic] = useState<EffectType>(
     EffectType.FireBall
   );
@@ -67,9 +67,7 @@ export function Experience() {
       type: EffectType,
       direction: THREE.Vector3,
       startPosition: THREE.Vector3,
-      targetPosition: THREE.Vector3,
-      onHit: (other: unknown, pos: THREE.Vector3) => void,
-      onComplete: (key: number) => void
+      targetPosition: THREE.Vector3
     ) => {
       const newKey = effectKeyCounter.current++;
 
@@ -83,9 +81,12 @@ export function Experience() {
             startPosition,
             direction,
             radius: 0.5,
-            excludeCollisionGroup: [CollisionGroup.Player],
-            onHit: onHit,
-            onComplete: () => onComplete(newKey),
+            excludeCollisionGroup: [
+              CollisionBitmask.My,
+              CollisionBitmask.Character,
+            ],
+            onHit: handleEffectHit,
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.Laser:
@@ -96,9 +97,9 @@ export function Experience() {
             length: 10,
             thickness: 0.3,
             hitInterval: 500,
-            excludeCollisionGroup: [CollisionGroup.Player],
-            onHit: onHit,
-            onComplete: () => onComplete(newKey),
+            excludeCollisionGroup: [CollisionBitmask.Character],
+            onHit: handleEffectHit,
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.Lightning:
@@ -109,23 +110,30 @@ export function Experience() {
             strikeCount: 5,
             spread: 1,
             rayOriginYOffset: 15,
-            excludeCollisionGroup: [CollisionGroup.Player],
-            onHit: onHit,
-            onComplete: () => onComplete(newKey),
+            excludeCollisionGroup: [
+              CollisionBitmask.My,
+              CollisionBitmask.Character,
+            ],
+            onHit: handleEffectHit,
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.Meteor:
           magic = {
             type: EffectType.Meteor,
-            count: 1,
+            count: 2,
             radius: 3,
-            spread: 3,
+            spread: 20,
             rayOriginYOffset: 15,
             duration: 2000,
             targetPosition: targetPosition,
-            excludeCollisionGroup: [CollisionGroup.Player],
-            onHit: onHit,
-            onComplete: () => onComplete(newKey),
+            excludeCollisionGroup: [
+              CollisionBitmask.My,
+              CollisionBitmask.Character,
+            ],
+            onHit: handleEffectHit,
+            onImpact: handleMagicEffectImpact,
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.PoisonSwamp:
@@ -137,9 +145,12 @@ export function Experience() {
             radius: 3,
             height: 0,
             opacity: 0.8,
-            excludeCollisionGroup: [CollisionGroup.Player],
-            onHit: onHit,
-            onComplete: () => onComplete(newKey),
+            excludeCollisionGroup: [
+              CollisionBitmask.My,
+              CollisionBitmask.Character,
+            ],
+            onHit: handleEffectHit,
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.AreaIndicator:
@@ -147,7 +158,7 @@ export function Experience() {
             type: EffectType.AreaIndicator,
             radius: 2,
             targetPosition: targetPosition,
-            onComplete: () => onComplete(newKey),
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.Bullet:
@@ -158,9 +169,12 @@ export function Experience() {
             startPosition: startPosition,
             direction: direction,
             size: new THREE.Vector3(0.5, 0.5, 1),
-            excludeCollisionGroup: [CollisionGroup.Player],
-            onHit: onHit,
-            onComplete: () => onComplete(newKey),
+            excludeCollisionGroup: [
+              CollisionBitmask.My,
+              CollisionBitmask.Character,
+            ],
+            onHit: handleEffectHit,
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.Dust:
@@ -170,7 +184,7 @@ export function Experience() {
             size: 0.4,
             opacity: 0.3,
             duration: 500,
-            onComplete: () => onComplete(newKey),
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
         case EffectType.Explosion:
@@ -179,14 +193,14 @@ export function Experience() {
             position: targetPosition,
             duration: 500,
             radius: 5,
-            onComplete: () => onComplete(newKey),
+            onComplete: () => handleMagicEffectComplete(newKey),
           };
           break;
       }
 
       if (!magic) return;
 
-      setMagicEffects((prev) => [...prev, { key: newKey, magic }]);
+      setMagicEffects((prev) => [...prev, { key: newKey, effect: magic }]);
     },
     []
   );
@@ -198,9 +212,56 @@ export function Experience() {
     );
   }, []);
 
-  const handleEffectHit = useCallback((other: unknown, pos: THREE.Vector3) => {
-    console.log("Experience hit effect", other, pos);
-  }, []);
+  const handleEffectHit = useCallback(
+    (other: unknown, type: EffectType, pos: THREE.Vector3) => {
+      console.log("Experience hit effect", other, pos);
+
+      const newKey = effectKeyCounter.current++;
+      let hitEffect: EffectProps | undefined;
+      switch (type) {
+        case EffectType.FireBall:
+          hitEffect = {
+            type: EffectType.Explosion,
+            position: pos,
+            duration: 600,
+            onComplete: () => handleMagicEffectComplete(newKey),
+          };
+          break;
+        default:
+          break;
+      }
+
+      setMagicEffects((prev) => [...prev, { key: newKey, effect: hitEffect }]);
+    },
+    [handleMagicEffectComplete]
+  );
+
+  const handleMagicEffectImpact = useCallback(
+    (type: EffectType, pos: THREE.Vector3) => {
+      console.log("Experience impact effect", type, pos);
+      const newKey = effectKeyCounter.current++;
+      let impactEffect: EffectProps | undefined;
+      switch (type) {
+        case EffectType.Meteor:
+          impactEffect = {
+            type: EffectType.Explosion,
+            position: pos,
+            radius: 3,
+            duration: 600,
+            onComplete: () => handleMagicEffectComplete(newKey),
+          };
+          break;
+        default:
+          break;
+      }
+
+      setMagicEffects((prev) => [
+        ...prev,
+        { key: newKey, effect: impactEffect },
+      ]);
+    },
+    [handleMagicEffectComplete]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -237,6 +298,8 @@ export function Experience() {
       <ambientLight intensity={0.7} />
 
       <Physics debug={false} paused={pausedPhysics}>
+        <Floor />
+
         <KeyboardControls map={keyboardMap}>
           <Environment preset="night" background={true} />
 
@@ -253,27 +316,18 @@ export function Experience() {
               controllerRef={controllerRef}
               targetHeight={targetHeight}
               onCastMagic={(dir, start, target) =>
-                handleCastMagic(
-                  selectedMagic,
-                  dir,
-                  start,
-                  target,
-                  handleEffectHit,
-                  handleMagicEffectComplete
-                )
+                handleCastMagic(selectedMagic, dir, start, target)
               }
               onUpdatePlayerTransform={handleUpdatePlayerTransform}
             />
           </FreeViewController>
         </KeyboardControls>
-
         <RandomBoxes count={20} range={10} />
-        <Floor />
 
         {magicEffects.map((effect) => (
           <React.Fragment key={effect.key}>
             {EffectFactory.create({
-              ...effect.magic,
+              ...effect.effect,
             })}
           </React.Fragment>
         ))}

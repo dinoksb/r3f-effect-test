@@ -2,11 +2,12 @@ import React, { useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 import { FireBallEffectProps } from "./FireBallEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
 export const FireBall: React.FC<FireBallEffectProps> = ({
+  type,
   startPosition,
   direction,
   speed,
@@ -106,6 +107,7 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
 
     // 수명이 끝나면 소멸
     if (elapsed > duration) {
+      console.log("FireBall complete");
       setDestroyed(true);
       onComplete?.();
     }
@@ -117,7 +119,7 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
   // RigidBody를 위한 충돌 그룹 계산
   const collisionGroups =
     RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionGroup.Projectile,
+      CollisionBitmask.Projectile,
       excludeCollisionGroup
     );
 
@@ -133,7 +135,8 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
           : undefined;
-        onHit?.(other, hitPosition);
+        onHit?.(other, type, hitPosition);
+        onComplete?.();
         setDestroyed(true);
       }}
       gravityScale={0}

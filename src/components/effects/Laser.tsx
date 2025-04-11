@@ -9,7 +9,7 @@ import {
 } from "@react-three/rapier";
 import { LaserEffectProps } from "./LaserEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
-import { CollisionGroup } from "../../constants/collisionGroups";
+import { CollisionBitmask } from "../../constants/collisionGroups";
 
 type LaserEffect = Omit<LaserEffectProps, "playerTransformRef"> & {
   position: THREE.Vector3;
@@ -17,6 +17,7 @@ type LaserEffect = Omit<LaserEffectProps, "playerTransformRef"> & {
 };
 
 export const Laser: React.FC<LaserEffect> = ({
+  type,
   position,
   direction,
   duration,
@@ -68,7 +69,7 @@ export const Laser: React.FC<LaserEffect> = ({
     if (canHit && onHit) {
       state.lastHitTime = now;
       const hitPosition = calculateHitPosition();
-      onHit(other, hitPosition);
+      onHit(other, type, hitPosition);
     }
   };
 
@@ -135,7 +136,7 @@ export const Laser: React.FC<LaserEffect> = ({
       const hitPosition = calculateHitPosition();
 
       state.collidingObjects.forEach((obj) => {
-        onHit?.(obj, hitPosition);
+        onHit?.(obj, type, hitPosition);
       });
     }
   };
@@ -284,7 +285,7 @@ export const Laser: React.FC<LaserEffect> = ({
 
   const collisionGroups =
     RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionGroup.Projectile,
+      CollisionBitmask.Projectile,
       excludeCollisionGroup
     );
 

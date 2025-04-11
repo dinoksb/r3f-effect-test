@@ -14,12 +14,13 @@ export interface LightningEffectProps {
   spread: number;
   rayOriginYOffset: number;
   excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onHit?: (other?: unknown, type?: EffectType, pos?: THREE.Vector3) => void;
   onComplete?: () => void;
   debug?: boolean;
 }
 
 export const LightningEffectController: React.FC<LightningEffectProps> = ({
+  type,
   targetPosition,
   duration,
   strikeCount,
@@ -133,6 +134,10 @@ export const LightningEffectController: React.FC<LightningEffectProps> = ({
     rayOriginYOffset,
   ]);
 
+  const handleHit = (other: unknown, pos: THREE.Vector3) => {
+    onHit?.(other, type, pos);
+  };
+
   if (isCalculating || actualTargets.length === 0 || !startPosition) {
     return null;
   }
@@ -142,7 +147,7 @@ export const LightningEffectController: React.FC<LightningEffectProps> = ({
       commonStartPosition={startPosition}
       targetPositions={actualTargets}
       excludeCollisionGroup={excludeCollisionGroup}
-      onHit={onHit}
+      onHit={handleHit}
       debug={debug}
     />
   );
