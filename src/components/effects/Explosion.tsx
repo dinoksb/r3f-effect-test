@@ -1,84 +1,140 @@
-import { Sphere } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { ExplosionDust } from "./ExplosionDust";
-import { EffectType } from "../../types/effect";
+import React, { useRef, useMemo, useState } from "react";
+import { useFrame } from "@react-three/fiber";
 
-export interface ExplosionEffectProps {
-  type: EffectType.Explosion;
-  position: THREE.Vector3;
-  duration?: number;
-  radius?: number;
+type Primitive = string | number | boolean | null | undefined | symbol | bigint;
+type PrimitiveOrArray = Primitive | Primitive[];
+
+const DEFAULT_SCALE = 1;
+
+interface ExplosionProps {
+  config: { [key: string]: PrimitiveOrArray };
   onComplete?: () => void;
 }
 
-export const Explosion: React.FC<ExplosionEffectProps> = ({
-  position,
-  duration = 600,
-  radius = 1,
-  onComplete,
-}) => {
-  const sphereRef = useRef<THREE.Mesh>(null);
-  const lightRef = useRef<THREE.PointLight>(null);
+// Utility to convert THREE.Vector3 to array (needed for store/server)
+const vecToArray = (vec: THREE.Vector3): [number, number, number] => {
+  return [vec.x, vec.y, vec.z];
+};
+
+// Utility to convert Vector3 array to THREE.Vector3 (needed for rendering)
+const arrayToVec = (arr?: [number, number, number]): THREE.Vector3 => {
+  if (!arr) {
+    console.error("Missing required config properties");
+    return new THREE.Vector3();
+  }
+  return new THREE.Vector3(arr[0], arr[1], arr[2]);
+};
+
+export const createExplosionEffectConfig = (
+  position: THREE.Vector3,
+  scale?: number
+): { [key: string]: PrimitiveOrArray } => {
+  return {
+    position: vecToArray(position),
+    scale: scale || DEFAULT_SCALE,
+  };
+};
+
+const parseConfig = (config: { [key: string]: any }) => {
+  return {
+    position: arrayToVec(config.position as [number, number, number]),
+    scale: (config.scale as number) || DEFAULT_SCALE,
+  };
+};
+
+function makeParticles(color: string, speed: number) {
+  // data: [position Vector3, movement direction Vector3]
+  const data = new Array(20).fill(null).map(() => {
+    const position = new THREE.Vector3();
+    const direction = new THREE.Vector3(
+      -1 + Math.random() * 2,
+      -1 + Math.random() * 2,
+      -1 + Math.random() * 2
+    )
+      .normalize()
+      .multiplyScalar(speed);
+    return [position, direction] as [THREE.Vector3, THREE.Vector3];
+  });
+
+  return { color, data };
+}
+
+// "Explosion/smoke" effect appearing at the collision point
+export const Explosion: React.FC<ExplosionProps> = ({ config, onComplete }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  // Reusable dummy object
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  // Explosion particle array (2 types with different color/speed)
+  const [particleGroups] = useState(() => [
+    makeParticles("white", 0.1),
+    makeParticles("grey", 0.1),
+  ]);
+
+  // "Total lifespan" of the explosion/smoke (in ms)
+  const totalDuration = 500;
   const startTime = useRef(performance.now());
-  const dustScale = useMemo(() => radius * 0.2, [radius]);
-  const dustSpreadStrength = useMemo(() => 0.15, []);
+  const { position, scale } = parseConfig(config);
 
   useFrame(() => {
     const elapsed = performance.now() - startTime.current;
-    const progress = Math.min(elapsed / duration, 1); // 0 ~ 1
+    const fadeOut = elapsed / totalDuration; // 0 ~ 1
 
-    if (sphereRef.current) {
-      // 충돌 구체 크기 (progress = 0~1)
-      const scale = progress * radius;
-      sphereRef.current.scale.set(scale, scale, scale);
+    // Iterate particle groups
+    particleGroups.forEach((pg, groupIndex) => {
+      // instancedMesh reference
+      const mesh = groupRef.current?.children[
+        groupIndex
+      ] as THREE.InstancedMesh;
+      if (!mesh) return;
 
-      // opacity는 (1 - progress)^2로 점차 감소
-      const opacity = Math.pow(1 - progress, 2);
-      const mat = sphereRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = opacity;
-      mat.needsUpdate = true;
+      // Move individual particles
+      pg.data.forEach(([pos, dir], i) => {
+        // Continuously adding dir results in spreading out
+        pos.add(dir);
+        dummy.position.copy(pos);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      });
+
+      // Reduce material opacity
+      if (mesh.material instanceof THREE.MeshBasicMaterial) {
+        mesh.material.opacity = Math.max(1 - fadeOut, 0);
+      }
+
+      mesh.instanceMatrix.needsUpdate = true;
+    });
+
+    if (!position || !scale) {
+      console.error("[Explosion] Missing required config properties");
+      onComplete?.();
+      return null;
     }
 
-    if (lightRef.current) {
-      // 광원의 밝기 점차 감소
-      lightRef.current.intensity = 10 * (1 - progress);
-    }
-
-    // 수명이 다하면 상위에서 제거되도록
-    if (elapsed > duration) {
-      console.log("Explosion complete");
+    // Trigger removal from parent when lifespan ends
+    if (elapsed > totalDuration) {
       onComplete?.();
     }
   });
 
   return (
-    <>
-      <Sphere ref={sphereRef} args={[1, 16, 16]} position={position}>
-        <meshBasicMaterial
-          color="#ff4400"
-          transparent
-          opacity={1}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </Sphere>
-      <pointLight
-        ref={lightRef}
-        position={position}
-        color="#ff4400"
-        intensity={10}
-        distance={15}
-        decay={2}
-      />
-      <ExplosionDust
-        position={position}
-        scale={dustScale}
-        duration={duration}
-        spreadStrength={dustSpreadStrength}
-      />
-    </>
+    <group ref={groupRef} position={position} scale={scale}>
+      {particleGroups.map((pg, index) => (
+        <instancedMesh
+          key={index}
+          args={[undefined, undefined, pg.data.length]}
+          frustumCulled={false} // Display even if outside camera frustum
+        >
+          <dodecahedronGeometry args={[1, 0]} />
+          <meshBasicMaterial
+            color={pg.color}
+            transparent
+            opacity={1}
+            depthWrite={false} // Make it look like smoke
+          />
+        </instancedMesh>
+      ))}
+    </group>
   );
 };

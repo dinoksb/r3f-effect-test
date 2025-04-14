@@ -94,7 +94,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
         length={length}
         thickness={thickness}
         hitInterval={hitInterval}
-        excludeCollisionGroup={excludeCollisionGroup}
+        // excludeCollisionGroup={excludeCollisionGroup}
         onHit={onHit}
         onComplete={onComplete}
       />

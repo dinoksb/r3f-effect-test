@@ -3,6 +3,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 
+type Primitive = string | number | boolean | null | undefined | symbol | bigint;
+type PrimitiveOrArray = Primitive | Primitive[];
+
 // --- Muzzle Flash 설정 ---
 const FLASH_PETAL_COUNT = 5; // 화염 갈래 수
 const FLASH_PETAL_LENGTH = 0.4; // 각 갈래 길이
@@ -12,21 +15,54 @@ const FLASH_TILT_ANGLE = Math.PI / 4; // 화염 갈래 기울기 (45도)
 const FLASH_INNER_GLOW_SIZE = 0.08; // 중앙 빛 크기
 const FLASH_COLOR = "#FFA500"; // 주황색 계열
 const FLASH_INNER_COLOR = "#FFFF55"; // 더 밝은 노란색 중심
+const DEFAULT_DURATION = 100; // 기본 지속 시간
 // ------------------------
 
 interface MuzzleFlashProps {
-  position: THREE.Vector3;
-  direction: THREE.Vector3;
-  duration: number;
+  config: { [key: string]: PrimitiveOrArray };
   onComplete?: () => void;
 }
 
+// Utility to convert THREE.Vector3 to array (needed for store/server)
+const vecToArray = (vec: THREE.Vector3): [number, number, number] => {
+  return [vec.x, vec.y, vec.z];
+};
+
+// Utility to convert Vector3 array to THREE.Vector3 (needed for rendering)
+const arrayToVec = (arr?: [number, number, number]): THREE.Vector3 => {
+  if (!arr) {
+    console.error("Missing required config properties");
+    return new THREE.Vector3();
+  }
+  return new THREE.Vector3(arr[0], arr[1], arr[2]);
+};
+
+export const createMuzzleFlashConfig = (
+  position: THREE.Vector3,
+  direction: THREE.Vector3,
+  duration: number
+): { [key: string]: PrimitiveOrArray } => {
+  return {
+    position: vecToArray(position),
+    direction: vecToArray(direction),
+    duration,
+  };
+};
+
+const parseConfig = (config: { [key: string]: any }) => {
+  return {
+    position: arrayToVec(config.position as [number, number, number]),
+    direction: arrayToVec(config.direction as [number, number, number]),
+    duration: (config.duration as number) || DEFAULT_DURATION,
+  };
+};
+
 export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
-  position,
-  direction,
-  duration,
+  config,
   onComplete,
 }) => {
+  const { position, direction, duration } = parseConfig(config);
+
   const [visible, setVisible] = useState(true);
   const startTime = useMemo(() => Date.now(), []); // 생성 시간 기록 (애니메이션용)
 
@@ -100,6 +136,11 @@ export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
     petalMaterial.opacity = opacity * 0.8;
     innerGlowMaterial.opacity = opacity;
   });
+
+  if (!position || !direction || !duration) {
+    console.error("[MuzzleFlash] Missing required config properties");
+    return null;
+  }
 
   if (!visible) return null; // 보이지 않으면 렌더링 안 함
 

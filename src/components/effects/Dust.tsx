@@ -1,35 +1,70 @@
 import * as THREE from "three";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import { useFrame } from "@react-three/fiber";
-import { EffectType } from "../../types/effect";
-export interface DustEffectProps {
-  type: EffectType.Dust;
-  startPosition: THREE.Vector3;
-  size?: number;
-  opacity?: number;
-  duration: number; // effect duration(ms)
-  onComplete?: () => void;
+
+type Primitive = string | number | boolean | null | undefined | symbol | bigint;
+type PrimitiveOrArray = Primitive | Primitive[];
+
+const DEFAULT_OPACITY = 0.3;
+const DEFAULT_SIZE = 0.3;
+const DEFAULT_DURATION = 300;
+
+export interface DustProps {
+  config: { [key: string]: PrimitiveOrArray };
+  onComplete: () => void;
 }
 
-export const Dust: React.FC<DustEffectProps> = ({
-  startPosition,
-  size = 1,
-  opacity = 0.1,
-  duration,
-  onComplete,
-}) => {
+// Utility to convert THREE.Vector3 to array (needed for store/server)
+const vecToArray = (vec: THREE.Vector3): [number, number, number] => {
+  return [vec.x, vec.y, vec.z];
+};
+
+// Utility to convert Vector3 array to THREE.Vector3 (needed for rendering)
+const arrayToVec = (arr?: [number, number, number]): THREE.Vector3 => {
+  if (!arr) {
+    console.error("Missing required config properties");
+    return new THREE.Vector3();
+  }
+  return new THREE.Vector3(arr[0], arr[1], arr[2]);
+};
+
+export const createDustConfig = (
+  startPosition: THREE.Vector3,
+  size?: number,
+  opacity?: number,
+  duration?: number
+): { [key: string]: PrimitiveOrArray } => {
+  return {
+    startPosition: vecToArray(startPosition),
+    size: size || DEFAULT_SIZE,
+    opacity: opacity || DEFAULT_OPACITY,
+    duration: duration || DEFAULT_DURATION,
+  };
+};
+
+const parseConfig = (config: { [key: string]: any }) => {
+  return {
+    startPosition: arrayToVec(config.startPosition as [number, number, number]),
+    size: (config.size as number) || DEFAULT_SIZE,
+    opacity: (config.opacity as number) || DEFAULT_OPACITY,
+    duration: (config.duration as number) || DEFAULT_DURATION,
+  };
+};
+
+export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
+  const { startPosition, size, opacity, duration } = parseConfig(config);
   const [active, setActive] = useState(true);
   const meshRef = useRef<THREE.Mesh>(null!);
   const startTime = useRef(Date.now());
   const scaleRef = useRef(0);
 
   // Effect cleanup function
-  const removeDust = () => {
+  const removeDust = useCallback(() => {
     if (active) {
       setActive(false);
       if (onComplete) onComplete();
     }
-  };
+  }, [active, onComplete]);
 
   // Set up effect and cleanup timer
   useEffect(() => {
@@ -46,7 +81,7 @@ export const Dust: React.FC<DustEffectProps> = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [duration, onComplete]);
+  }, []);
 
   // Animation loop
   useFrame(() => {
@@ -73,6 +108,12 @@ export const Dust: React.FC<DustEffectProps> = ({
       removeDust();
     }
   });
+
+  if (!startPosition || !size || !opacity || !duration) {
+    console.error("[Dust] Missing required config properties");
+    onComplete?.();
+    return null;
+  }
 
   // Don't render if not active
   if (!active) return null;

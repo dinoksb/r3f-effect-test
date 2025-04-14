@@ -9,7 +9,7 @@ import {
 } from "../components/effects/LaserEffectController";
 import {
   LightningEffectController,
-  LightningEffectProps,
+  LightningEffectControllerProps,
 } from "../components/effects/LightningEffectController";
 import {
   MeteorEffectController,
@@ -25,10 +25,10 @@ import {
   AreaIndicatorEffectProps,
 } from "../components/effects/AreaIndicatorEffectController";
 import {
-  BulletEffectProps,
+  BulletEffectControllerProps,
   BulletEffectController,
 } from "../components/effects/BulletEffectController";
-import { Dust, DustEffectProps } from "../components/effects/Dust";
+import { Dust, DustProps } from "../components/effects/Dust";
 import {
   Explosion,
   ExplosionEffectProps,
@@ -37,12 +37,12 @@ import {
 export type EffectProps =
   | FireBallEffectProps
   | LaserEffectProps
-  | LightningEffectProps
+  | LightningEffectControllerProps
   | MeteorEffectProps
   | PoisonSwampEffectProps
   | AreaIndicatorEffectProps
-  | BulletEffectProps
-  | DustEffectProps
+  | BulletEffectControllerProps
+  | DustProps
   | ExplosionEffectProps;
 
 export const MagicComponentMap = {

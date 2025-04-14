@@ -9,9 +9,21 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Trail } from "@react-three/drei";
 import { RigidBody, BallCollider } from "@react-three/rapier";
-import { MeteorEffectProps } from "./MeteorEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
+
+export interface MeteorProps {
+  startPosition: THREE.Vector3;
+  targetPosition: THREE.Vector3;
+  startDelay: number;
+  radius: number;
+  duration: number; // effect duration(ms)
+  excludeCollisionGroup?: number[];
+  onHit?: (other: unknown, pos: THREE.Vector3) => void;
+  onImpact?: (pos: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
 
 function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   const [progress, setProgress] = useState(0);
@@ -43,17 +55,7 @@ function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   return { progress, active };
 }
 
-type MeteorProps = Omit<
-  MeteorEffectProps,
-  "targetPositions" | "count" | "spread" | "rayOriginYOffset"
-> & {
-  startPosition: THREE.Vector3;
-  targetPosition: THREE.Vector3;
-  startDelay: number;
-};
-
 export const Meteor: React.FC<MeteorProps> = ({
-  type,
   startPosition,
   targetPosition,
   radius,
@@ -90,10 +92,10 @@ export const Meteor: React.FC<MeteorProps> = ({
   // 충돌 이벤트 처리
   const handleOnHit = useCallback(
     (other: unknown) => {
-      console.log("Meteor onHit", other, type, targetPosition);
-      onHit?.(other, type, targetPosition);
+      console.log("Meteor onHit", other, targetPosition);
+      onHit?.(other, targetPosition);
     },
-    [onHit, type, targetPosition]
+    [onHit, targetPosition]
   );
 
   useFrame(() => {
@@ -200,9 +202,6 @@ export const Meteor: React.FC<MeteorProps> = ({
   );
 };
 
-/** ----------------------------
- *  4) Hitbox
- * ---------------------------- */
 interface HitboxProps {
   position: THREE.Vector3;
   duration: number;

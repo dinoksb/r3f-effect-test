@@ -1,22 +1,37 @@
 import * as THREE from "three";
 import React, { useRef, useEffect, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { BulletEffectProps } from "./BulletEffectController";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { RigidBody, CuboidCollider } from "@react-three/rapier";
 
-export const Bullet: React.FC<BulletEffectProps> = ({
-  type,
+const DEFAULT_SIZE = new THREE.Vector3(0.5, 0.5, 1);
+const DEFAULT_MEMBERSHIP_COLLISION_GROUP = CollisionBitmask.Projectile;
+const DEFAULT_EXCLUDE_COLLISION_GROUP = CollisionBitmask.Player;
+
+export interface BulletProps {
+  startPosition: THREE.Vector3;
+  direction: THREE.Vector3;
+  speed: number;
+  duration: number;
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+}
+
+const createCollisionGroups = () => {
+  return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+    DEFAULT_MEMBERSHIP_COLLISION_GROUP,
+    DEFAULT_EXCLUDE_COLLISION_GROUP
+  );
+};
+
+export const Bullet: React.FC<BulletProps> = ({
   startPosition,
   direction,
   speed,
   duration,
-  size,
-  excludeCollisionGroup,
   onHit,
   onComplete,
-  debug = false,
 }) => {
   const [active, setActive] = useState(true);
   const rigidRef = useRef(null);
@@ -50,7 +65,7 @@ export const Bullet: React.FC<BulletEffectProps> = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [duration, onComplete]);
+  }, [duration]);
 
   useFrame(() => {
     if (!active || !rigidRef.current) return;
@@ -94,18 +109,11 @@ export const Bullet: React.FC<BulletEffectProps> = ({
   // 총알의 실제 크기 계산 (기본 지오메트리 × 스케일)
   const actualBulletSize = useMemo(() => {
     return {
-      x: bulletGeometry.parameters.width * size.x,
-      y: bulletGeometry.parameters.height * size.y,
-      z: bulletGeometry.parameters.depth * size.z,
+      x: bulletGeometry.parameters.width * DEFAULT_SIZE.x,
+      y: bulletGeometry.parameters.height * DEFAULT_SIZE.y,
+      z: bulletGeometry.parameters.depth * DEFAULT_SIZE.z,
     };
-  }, [bulletGeometry.parameters, size]);
-
-  // RigidBody를 위한 충돌 그룹 계산
-  const collisionGroups =
-    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionBitmask.Projectile,
-      excludeCollisionGroup
-    );
+  }, [bulletGeometry.parameters]);
 
   // 총알이 삭제된 경우 렌더링하지 않음
   if (!active) return null;
@@ -118,18 +126,18 @@ export const Bullet: React.FC<BulletEffectProps> = ({
       colliders={false}
       sensor={true}
       rotation={bulletRotation}
-      onIntersectionEnter={(other) => {
+      onIntersectionEnter={(payload) => {
         const translation = rigidRef.current?.translation();
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
           : undefined;
         // 충돌 이벤트 발생
-        if (onHit) onHit(other, type, hitPosition);
+        if (onHit) onHit(payload, hitPosition);
         // 총알 제거
         removeBullet();
       }}
       gravityScale={0}
-      collisionGroups={collisionGroups}
+      collisionGroups={createCollisionGroups()}
     >
       {/* 총알 충돌용 CuboidCollider - 기본 지오메트리 크기와 스케일 모두 고려 */}
       <CuboidCollider
@@ -140,17 +148,11 @@ export const Bullet: React.FC<BulletEffectProps> = ({
         ]}
       />
 
-      {/* 콜라이더 시각화 (디버깅용) */}
-      {debug && (
-        <mesh position={[0, 0, 0]}>
-          <boxGeometry
-            args={[actualBulletSize.x, actualBulletSize.y, actualBulletSize.z]}
-          />
-          <meshBasicMaterial wireframe color="red" transparent opacity={0.5} />
-        </mesh>
-      )}
-
-      <mesh geometry={bulletGeometry} material={bulletMaterial} scale={size} />
+      <mesh
+        geometry={bulletGeometry}
+        material={bulletMaterial}
+        scale={DEFAULT_SIZE}
+      />
     </RigidBody>
   );
 };

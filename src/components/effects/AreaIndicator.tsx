@@ -3,24 +3,67 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Ring } from "@react-three/drei";
 
+type Primitive = string | number | boolean | null | undefined | symbol | bigint;
+type PrimitiveOrArray = Primitive | Primitive[];
+
+const DEFAULT_COLOR = "#ff3300";
+const DEFAULT_RADIUS = 2;
+const DEFAULT_DURATION = 1500;
+const DEFAULT_PULSE_SPEED = 2;
+
 interface AreaIndicatorProps {
-  position: THREE.Vector3;
-  radius?: number;
-  color?: string;
-  duration?: number;
-  pulseSpeed?: number;
+  config: { [key: string]: PrimitiveOrArray };
+  onComplete: () => void;
 }
+
+// Utility to convert THREE.Vector3 to array (needed for store/server)
+const vecToArray = (vec: THREE.Vector3): [number, number, number] => {
+  return [vec.x, vec.y, vec.z];
+};
+
+// Utility to convert Vector3 array to THREE.Vector3 (needed for rendering)
+const arrayToVec = (arr?: [number, number, number]): THREE.Vector3 => {
+  if (!arr) {
+    console.error("Missing required config properties");
+    return new THREE.Vector3();
+  }
+  return new THREE.Vector3(arr[0], arr[1], arr[2]);
+};
+
+export const createAreaIndicatorConfig = (
+  position: THREE.Vector3,
+  radius?: number,
+  color?: string,
+  duration?: number,
+  pulseSpeed?: number
+): { [key: string]: PrimitiveOrArray } => {
+  return {
+    position: vecToArray(position),
+    radius: radius || DEFAULT_RADIUS,
+    color: color || DEFAULT_COLOR,
+    duration: duration || DEFAULT_DURATION,
+    pulseSpeed: pulseSpeed || DEFAULT_PULSE_SPEED,
+  };
+};
+
+const parseConfig = (config: { [key: string]: any }) => {
+  return {
+    position: arrayToVec(config.position as [number, number, number]),
+    radius: (config.radius as number) || DEFAULT_RADIUS,
+    color: (config.color as string) || DEFAULT_COLOR,
+    duration: (config.duration as number) || DEFAULT_DURATION,
+    pulseSpeed: (config.pulseSpeed as number) || DEFAULT_PULSE_SPEED,
+  };
+};
 
 /**
  * 메테오가 떨어질 위치를 바닥에 표시하는 이펙트 컴포넌트
  */
 export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
-  position,
-  radius = 2,
-  color = "#ff3300",
-  duration = 1500,
-  pulseSpeed = 2,
+  config,
+  onComplete,
 }) => {
+  const { position, radius, color, duration, pulseSpeed } = parseConfig(config);
   const startTime = useRef(Date.now());
   const [destroyed, setDestroyed] = useState(false);
 
@@ -30,14 +73,14 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
   const colLineRef = useRef<THREE.Mesh>();
   const innerRingScale = useRef(0);
 
-  // 경고 완료 시 정리
   useEffect(() => {
     const timer = setTimeout(() => {
       setDestroyed(true);
+      onComplete?.();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration]);
+  }, [duration, onComplete]);
 
   useFrame(() => {
     if (destroyed) return;
@@ -96,6 +139,11 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
     }
   });
 
+  if (!position || !radius || !color || !duration || !pulseSpeed) {
+    console.error("[AreaIndicator] Missing required config properties");
+    onComplete?.();
+    return null;
+  }
   if (destroyed) return null;
 
   // Y 좌표는 바닥에 딱 붙게 약간 올려줌 (z-fighting 방지)

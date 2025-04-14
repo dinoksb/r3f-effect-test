@@ -6,14 +6,6 @@ import { RigidBody, BallCollider } from "@react-three/rapier";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 
-interface LightningStrikeProps {
-  commonStartPosition: THREE.Vector3; // Receive the fixed start position
-  targetPositions: THREE.Vector3[];
-  excludeCollisionGroup?: number[];
-  onHit: (other?: unknown, pos?: THREE.Vector3) => void;
-  debug: boolean;
-}
-
 // Function to generate jagged points for the lightning bolt
 const createLightningPath = (
   start: THREE.Vector3,
@@ -247,7 +239,7 @@ const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({
 interface HitboxProps {
   position: THREE.Vector3;
   duration: number;
-  excludeCollisionGroup?: number[];
+  excludeCollisionGroup?: number;
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
   debug?: boolean;
   radius: number; // Required radius parameter
@@ -320,18 +312,32 @@ const Hitbox: React.FC<HitboxProps> = ({
   );
 };
 
+export interface LightningStrikeProps {
+  commonStartPosition: THREE.Vector3;
+  targetPositions: THREE.Vector3[];
+  duration: number; // effect duration(ms)
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
+
+const createCollisionGroups = () => {
+  return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+    CollisionBitmask.AOE,
+    [CollisionBitmask.Player]
+  );
+};
+
 export const LightningStrike: React.FC<LightningStrikeProps> = ({
   commonStartPosition,
   targetPositions,
-  excludeCollisionGroup,
+  duration,
   onHit,
   debug = false,
 }) => {
   const startTime = useRef(Date.now());
-  const duration = 600; // Overall duration for the multi-strike effect
   const flashLightRef = useRef<THREE.SpotLight>(); // Keep flash light logic
   const flashDuration = 50;
-
   // Define the effect radius to be shared by both impact effect and hitbox
   const effectRadius = 3;
 
@@ -373,16 +379,14 @@ export const LightningStrike: React.FC<LightningStrikeProps> = ({
       />
 
       {/* Hitbox at the center of all targets */}
-      {targetPositions.length > 0 && (
-        <Hitbox
-          position={centerPosition}
-          duration={duration}
-          excludeCollisionGroup={excludeCollisionGroup}
-          onHit={onHit}
-          debug={debug}
-          radius={effectRadius}
-        />
-      )}
+      <Hitbox
+        position={centerPosition}
+        duration={duration}
+        excludeCollisionGroup={createCollisionGroups()}
+        onHit={onHit}
+        debug={debug}
+        radius={effectRadius}
+      />
 
       {targetPositions.map((targetPos, index) => (
         <React.Fragment key={index}>

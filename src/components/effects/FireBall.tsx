@@ -1,19 +1,38 @@
 import React, { useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { RigidBody, BallCollider } from "@react-three/rapier";
+import {
+  RigidBody,
+  BallCollider,
+  IntersectionEnterPayload,
+} from "@react-three/rapier";
 import { CollisionBitmask } from "../../constants/collisionGroups";
-import { FireBallEffectProps } from "./FireBallEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 
-export const FireBall: React.FC<FireBallEffectProps> = ({
-  type,
+const DEFAULT_MEMBERSHIP_COLLISION_GROUP = CollisionBitmask.Projectile;
+const DEFAULT_EXCLUDE_COLLISION_GROUP = CollisionBitmask.Player;
+
+interface FireBallProps {
+  startPosition: THREE.Vector3;
+  direction: THREE.Vector3; // Normalized direction vector
+  speed: number; // Distance traveled per second
+  duration: number; // Lifespan (milliseconds)
+  onHit?: (other: IntersectionEnterPayload, pos?: THREE.Vector3) => boolean; // Callback on collision
+  onComplete?: () => void;
+}
+
+const createCollisionGroups = () => {
+  return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+    DEFAULT_MEMBERSHIP_COLLISION_GROUP,
+    DEFAULT_EXCLUDE_COLLISION_GROUP
+  );
+};
+
+export const FireBall: React.FC<FireBallProps> = ({
   startPosition,
   direction,
   speed,
   duration,
-  radius, // 기본 크기 비율 추가 (기본값 1)
-  excludeCollisionGroup, // 충돌 그룹
   onHit,
   onComplete,
 }) => {
@@ -21,34 +40,26 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
   const [trailReady, setTrailReady] = useState(false);
 
   const [trailKey, setTrailKey] = useState(0);
-  // FireBall의 "생성 시점"
+  // FireBall's "creation time"
   const startTime = useRef(Date.now());
 
-  // RigidBody 참조 (Rapier 객체)
+  // RigidBody reference (Rapier object)
   const rigidRef = useRef(null);
-  const groupRef = useRef<THREE.Group>(null);
 
-  // 내부 Mesh & Light를 가리키는 ref
+  // Refs pointing to the inner Mesh & Light
   const outerRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
 
-  // 처음 몇 프레임 건너뛴 뒤 Trail을 보여주도록
+  // Show Trail after skipping the first few frames
   const frameCountRef = useRef(0);
 
-  // 크기 관련 상수 계산
-  const outerRadius = radius;
-  const coreRadius = 0.9 * radius;
-  const colliderRadius = radius;
-  const lightDistance = 8 * radius;
-  const lightIntensityBase = 5 * radius;
-
-  // 매 프레임마다 kinematic RigidBody의 위치와 이펙트를 업데이트
+  // Update kinematic RigidBody position and effect every frame
   useFrame(() => {
     if (destroyed) return;
 
     frameCountRef.current++;
-    // 예: 2~3프레임(또는 n프레임) 지난 뒤 Trail 표시
+    // Example: Show Trail after 2-3 frames (or n frames)
     if (!trailReady && frameCountRef.current > 5) {
       setTrailReady(true);
       setTrailKey(trailKey + 1);
@@ -57,20 +68,20 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
     const elapsed = Date.now() - startTime.current;
     const seconds = elapsed / 1000;
 
-    // // 새 위치 = 초기 위치 + 방향 * 속도 * 경과시간
+    // // New position = initial position + direction * speed * elapsed time
     const currentPos = startPosition
       .clone()
       .add(direction.clone().multiplyScalar(speed * seconds));
 
-    // // Rapier Kinematic Body 이동 업데이트
-    // setNextKinematicTranslation( { x, y, z } ) 형태로 전달
+    // // Update Rapier Kinematic Body movement
+    // Pass in the form of setNextKinematicTranslation({ x, y, z })
     rigidRef.current?.setNextKinematicTranslation({
       x: currentPos.x,
       y: currentPos.y,
       z: currentPos.z,
     });
 
-    // Fade out 계산
+    // Calculate fade out
     const fadeStart = duration - 400;
     const fadeElapsed = Math.max(elapsed - fadeStart, 0);
     const fadeProgress = THREE.MathUtils.clamp(fadeElapsed / 400, 0, 1);
@@ -86,7 +97,7 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
       coreRef.current.scale.setScalar(0.6 + Math.sin(elapsed * 0.04) * 0.1);
     }
 
-    // Material opacity 조정
+    // Adjust Material opacity
     const outerMat = outerRef.current?.material as THREE.MeshBasicMaterial;
     const coreMat = coreRef.current?.material as THREE.MeshBasicMaterial;
     if (outerMat && coreMat) {
@@ -99,88 +110,81 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
     // Light intensity
     if (lightRef.current) {
       lightRef.current.intensity =
-        (lightIntensityBase +
-          Math.sin(elapsed * 0.03) * 2 * radius +
-          Math.random()) *
-        opacityFactor;
+        (5 + Math.sin(elapsed * 0.03) * 2 + Math.random()) * opacityFactor;
     }
 
-    // 수명이 끝나면 소멸
+    // Destroy at the end of lifespan
     if (elapsed > duration) {
-      console.log("FireBall complete");
       setDestroyed(true);
       onComplete?.();
     }
   });
 
-  // 소멸되면 렌더링 X
+  // Don't render if destroyed
   if (destroyed) return null;
-
-  // RigidBody를 위한 충돌 그룹 계산
-  const collisionGroups =
-    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionBitmask.Projectile,
-      excludeCollisionGroup
-    );
 
   return (
     <RigidBody
       ref={rigidRef}
+      // Set Sensor collision mode
       type="kinematicPosition"
-      position={[startPosition.x, startPosition.y, startPosition.z]}
-      colliders={false}
-      sensor={true}
-      onIntersectionEnter={(other) => {
+      colliders={false} // Shape defined by BallCollider below
+      sensor={true} // Collision events only, no physical reaction
+      // Collision (intersection) event
+      onIntersectionEnter={(payload) => {
+        // Called when FireBall intersects another RigidBody
         const translation = rigidRef.current?.translation();
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
           : undefined;
-        onHit?.(other, type, hitPosition);
-        onComplete?.();
-        setDestroyed(true);
+        if (onHit?.(payload, hitPosition)) {
+          onComplete?.();
+          setDestroyed(true);
+        }
       }}
+      collisionGroups={createCollisionGroups()}
+      // Set initial position
+      position={[startPosition.x, startPosition.y, startPosition.z]}
+      // Not affected by gravity, etc.
       gravityScale={0}
-      collisionGroups={collisionGroups}
     >
-      {/* FireBall 충돌용 컬라이더 (반지름=0.4) */}
-      <BallCollider args={[colliderRadius]} />
+      {/* FireBall collider (radius=0.4) */}
+      <BallCollider args={[0.4]} />
 
-      <group ref={groupRef}>
-        {/* 불꽃 외피 */}
-        <mesh ref={outerRef}>
-          <sphereGeometry args={[outerRadius, 16, 16]} />
-          <meshBasicMaterial
-            color="#ff3300"
-            transparent
-            opacity={0.8}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
-
-        {/* 중심 코어 */}
-        <mesh ref={coreRef}>
-          <sphereGeometry args={[coreRadius, 16, 16]} />
-          <meshBasicMaterial
-            color="#ffffcc"
-            transparent
-            opacity={1}
-            side={THREE.DoubleSide}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-          />
-        </mesh>
-
-        {/* 포인트 라이트 */}
-        <pointLight
-          ref={lightRef}
-          color="#ff6600"
-          intensity={lightIntensityBase}
-          distance={lightDistance}
-          decay={2}
+      {/* Flame outer shell */}
+      <mesh ref={outerRef}>
+        <sphereGeometry args={[0.4, 16, 16]} />
+        <meshBasicMaterial
+          color="#ff3300"
+          transparent
+          opacity={0.8}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
         />
-      </group>
+      </mesh>
+
+      {/* Center core */}
+      <mesh ref={coreRef}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshBasicMaterial
+          color="#ffffcc"
+          transparent
+          opacity={1}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      {/* Point light */}
+      <pointLight
+        ref={lightRef}
+        color="#ff6600"
+        intensity={5}
+        distance={8}
+        decay={2}
+      />
     </RigidBody>
   );
 };

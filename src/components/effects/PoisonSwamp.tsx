@@ -9,9 +9,22 @@ import {
   IntersectionEnterHandler,
   IntersectionExitHandler,
 } from "@react-three/rapier";
-import { PoisonSwampEffectProps } from "./PoisonSwampEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
+
+// PoisonSwamp 마법 Props
+export interface PoisonSwampEffectProps {
+  targetPosition: THREE.Vector3;
+  duration: number; // effect duration(ms)
+  hitInterval: number;
+  radius: number;
+  height: number;
+  opacity: number;
+  excludeCollisionGroup?: number[];
+  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onComplete?: () => void;
+  debug?: boolean;
+}
 
 interface BubbleParticle {
   position: THREE.Vector3;
@@ -65,13 +78,12 @@ function createBubbleParticles(
 }
 
 export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
-  type,
   targetPosition,
-  duration = 2000,
-  radius = 5,
-  height = -0.5,
-  opacity = 0.5,
-  hitInterval = 500,
+  duration,
+  radius,
+  height,
+  opacity,
+  hitInterval,
   excludeCollisionGroup,
   onHit,
   onComplete,
@@ -120,7 +132,7 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
 
     if (now - state.lastHitTime >= hitInterval && onHit) {
       state.lastHitTime = now;
-      onHit(other, type, targetPosition);
+      onHit(other, targetPosition);
     }
   };
 
@@ -186,7 +198,7 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
       state.collidingObjects.size > 0 && now - state.lastHitTime >= hitInterval;
     if (canHit && onHit) {
       state.lastHitTime = now;
-      state.collidingObjects.forEach((obj) => onHit(obj, type, targetPosition));
+      state.collidingObjects.forEach((obj) => onHit(obj, targetPosition));
     }
     if (fadeOutProgress > 0.5) state.collidingObjects.clear();
 

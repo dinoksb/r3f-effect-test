@@ -1,4 +1,12 @@
-import React, { useRef, useMemo, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useRef,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import * as THREE from "three";
 import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
@@ -15,6 +23,15 @@ import {
 } from "vibe-starter-3d/dist/src/components/renderers/CharacterRenderer";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
+import { EffectType } from "../../types/effect";
+import { createFireBallEffectConfig } from "../effects/FireBallEffectController";
+import { createLightningEffectConfig } from "../effects/LightningEffectController";
+import { createMeteorEffectConfig } from "../effects/MeteorEffectController";
+import { createExplosionWithImpactConfig } from "../effects/ExplosionWithImpact";
+import { createPoisonSwampEffectConfig } from "../effects/PoisonSwampEffectController";
+import { createBulletEffectConfig } from "../effects/BulletEffectController";
+import { createAreaIndicatorConfig } from "../effects/AreaIndicator";
+import { createDustConfig } from "../effects/Dust";
 
 /**
  * Player input parameters for action determination
@@ -52,15 +69,7 @@ interface PlayerProps {
   /** Target height for the character model */
   targetHeight?: number;
   /** Callback to request magic cast */
-  onCastMagic?: (
-    direction: THREE.Vector3,
-    startPosition: THREE.Vector3,
-    targetPosition: THREE.Vector3
-  ) => void;
-  onUpdatePlayerTransform?: (
-    position: THREE.Vector3,
-    direction: THREE.Vector3
-  ) => void;
+  spawnEffect?: (type: EffectType, config?: { [key: string]: any }) => void;
 }
 
 /**
@@ -247,8 +256,7 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       initState: initAction = CharacterState.IDLE,
       controllerRef,
       targetHeight = 1.6,
-      onCastMagic,
-      onUpdatePlayerTransform,
+      spawnEffect,
     },
     ref
   ) => {
@@ -259,6 +267,9 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
     const characterRendererRef = useRef<CharacterRendererRef>(null);
     const hasInitializedRef = useRef(false);
     const magicTriggeredRef = useRef(false);
+    const [selectedMagic, setSelectedMagic] = useState<EffectType>(
+      EffectType.FIREBALL
+    );
 
     useImperativeHandle(
       ref,
@@ -272,6 +283,22 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       }),
       []
     );
+
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "1") setSelectedMagic(EffectType.FIREBALL);
+        if (e.key === "2") setSelectedMagic(EffectType.LASER);
+        if (e.key === "3") setSelectedMagic(EffectType.LIGHTNING);
+        if (e.key === "4") setSelectedMagic(EffectType.METEOR);
+        if (e.key === "5") setSelectedMagic(EffectType.POISON_SWAMP);
+        if (e.key === "6") setSelectedMagic(EffectType.AREA_INDICATOR);
+        if (e.key === "7") setSelectedMagic(EffectType.BULLET);
+        if (e.key === "8") setSelectedMagic(EffectType.DUST);
+        if (e.key === "9") setSelectedMagic(EffectType.EXPLOSION_WITH_IMPACT);
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     // Set collision groups on player rigid body
     useFrame(() => {
@@ -293,6 +320,103 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
       hasInitializedRef.current = true;
     });
 
+    // Magic casting logic extracted as a separate function
+    const handleMagicCast = useCallback(() => {
+      if (!controllerRef?.current?.rigidBodyRef?.current) return;
+
+      console.log("Magic key pressed - Requesting cast!");
+
+      // Call callback provided by parent component
+      if (spawnEffect) {
+        // Calculate magic direction (direction character is facing)
+        const rigidBody = controllerRef.current.rigidBodyRef.current;
+        const position = rigidBody.translation();
+        const startPosition = new THREE.Vector3(
+          position.x,
+          position.y,
+          position.z
+        );
+        const rotation = rigidBody.rotation();
+        const quaternion = new THREE.Quaternion(
+          rotation.x,
+          rotation.y,
+          rotation.z,
+          rotation.w
+        );
+        const direction = new THREE.Vector3(0, 0, 1)
+          .applyQuaternion(quaternion)
+          .normalize();
+
+        console.log("Selected magic:", selectedMagic);
+
+        switch (selectedMagic) {
+          case EffectType.FIREBALL:
+            spawnEffect(
+              EffectType.FIREBALL,
+              createFireBallEffectConfig(startPosition, direction)
+            );
+            break;
+          case EffectType.LIGHTNING: {
+            const playerPos = startPosition.clone();
+            const targetPos = playerPos
+              .clone()
+              .add(direction.clone().multiplyScalar(5));
+            spawnEffect(
+              EffectType.LIGHTNING,
+              createLightningEffectConfig(targetPos)
+            );
+            break;
+          }
+          case EffectType.METEOR:
+            spawnEffect(
+              EffectType.METEOR,
+              createMeteorEffectConfig(startPosition)
+            );
+            break;
+          case EffectType.EXPLOSION_WITH_IMPACT:
+            spawnEffect(
+              EffectType.EXPLOSION_WITH_IMPACT,
+              createExplosionWithImpactConfig(startPosition)
+            );
+            break;
+          case EffectType.POISON_SWAMP:
+            {
+              const playerPos = startPosition.clone();
+              const targetPos = new THREE.Vector3(
+                playerPos.x,
+                0.01,
+                playerPos.z
+              );
+
+              spawnEffect(
+                EffectType.POISON_SWAMP,
+                createPoisonSwampEffectConfig(targetPos)
+              );
+            }
+            break;
+          case EffectType.BULLET:
+            spawnEffect(
+              EffectType.BULLET,
+              createBulletEffectConfig(startPosition, direction)
+            );
+            break;
+          case EffectType.AREA_INDICATOR:
+            spawnEffect(
+              EffectType.AREA_INDICATOR,
+              createAreaIndicatorConfig(startPosition)
+            );
+            break;
+          case EffectType.DUST:
+            spawnEffect(EffectType.DUST, createDustConfig(startPosition));
+            break;
+        }
+      } else {
+        console.warn(
+          "Player tried to cast magic, but onCastMagic prop is missing!"
+        );
+      }
+    }, [controllerRef, spawnEffect, selectedMagic]);
+
     // Magic cast
     useFrame(() => {
       if (!controllerRef?.current?.rigidBodyRef?.current) return;
@@ -302,55 +426,8 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
 
       const triggerMagic = isMagic && !magicTriggeredRef.current;
 
-      // Use the existing rigidBody reference
-      const worldPosition =
-        controllerRef.current.rigidBodyRef.current.translation();
-      const position = new THREE.Vector3(
-        worldPosition.x,
-        worldPosition.y,
-        worldPosition.z
-      );
-
-      // Forward direction = apply quaternion to (0, 0, -1)
-      const rotation = controllerRef.current.rigidBodyRef.current.rotation(); // Quaternion
-      const quaternion = new THREE.Quaternion(
-        rotation.x,
-        rotation.y,
-        rotation.z,
-        rotation.w
-      );
-      const direction = new THREE.Vector3(0, 0, 1)
-        .applyQuaternion(quaternion)
-        .normalize();
-
       if (triggerMagic) {
-        console.log("Magic key pressed - Requesting cast!");
-        // Calculate target near player (re-enabled)
-        const targetPosition = new THREE.Vector3(0, 0, 0);
-        const currentPosition =
-          controllerRef.current.rigidBodyRef.current.translation();
-        currentPosition.y = 0;
-        const radius = 5;
-        const randomAngle = Math.random() * Math.PI * 2;
-        const randomRadius = Math.random() * radius;
-        targetPosition.set(
-          currentPosition.x + Math.cos(randomAngle) * randomRadius,
-          0,
-          currentPosition.z + Math.sin(randomAngle) * randomRadius
-        );
-
-        // Call the callback provided by the parent
-        if (onCastMagic) {
-          onCastMagic(direction, position, targetPosition);
-        } else {
-          console.warn(
-            "Player tried to cast magic, but onCastMagic prop is missing!"
-          );
-        }
-      }
-
-      if (onUpdatePlayerTransform) {
-        onUpdatePlayerTransform(position, direction);
+        handleMagicCast();
       }
 
       magicTriggeredRef.current = isMagic;

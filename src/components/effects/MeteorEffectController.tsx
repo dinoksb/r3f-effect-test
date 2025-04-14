@@ -1,40 +1,71 @@
 import React, { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
-import { useRapier } from "@react-three/rapier";
+import { IntersectionEnterPayload, useRapier } from "@react-three/rapier";
 import { Ray } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
-import { EffectType } from "../../types/effect";
+import { AreaIndicator } from "./AreaIndicator";
+
+type Primitive = string | number | boolean | null | undefined | symbol | bigint;
+type PrimitiveOrArray = Primitive | Primitive[];
+
+const DEFAULT_COUNT = 1;
+const DEFAULT_RADIUS = 3;
+const DEFAULT_DURATION = 2000;
+const DEFAULT_SPREAD = 10;
+const DEFAULT_RAY_ORIGIN_Y_OFFSET = 15;
 
 // Meteor 마법 Props
-export interface MeteorEffectProps {
-  type: EffectType.Meteor;
-  targetPosition: THREE.Vector3;
-  count: number;
-  radius: number;
-  duration: number; // effect duration(ms)
-  spread: number;
-  rayOriginYOffset: number;
-  excludeCollisionGroup?: number[];
-  onHit?: (other: unknown, type: EffectType, pos: THREE.Vector3) => void;
-  onImpact?: (type: EffectType, pos: THREE.Vector3) => void;
+export interface MeteorEffectControllerProps {
+  config: { [key: string]: PrimitiveOrArray };
+  onHit?: (other: IntersectionEnterPayload, pos: THREE.Vector3) => void;
+  onImpact?: (pos: THREE.Vector3) => void;
   onComplete?: () => void;
-  debug?: boolean;
 }
 
-export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
-  type,
-  targetPosition,
-  count,
-  duration,
-  radius,
-  spread,
-  rayOriginYOffset,
-  excludeCollisionGroup,
+// Utility to convert THREE.Vector3 to array (needed for store/server)
+const vecToArray = (vec: THREE.Vector3): [number, number, number] => {
+  return [vec.x, vec.y, vec.z];
+};
+
+// Utility to convert Vector3 array to THREE.Vector3 (needed for rendering)
+const arrayToVec = (arr?: [number, number, number]): THREE.Vector3 => {
+  if (!arr) {
+    console.error("Missing required config properties");
+    return new THREE.Vector3();
+  }
+  return new THREE.Vector3(arr[0], arr[1], arr[2]);
+};
+
+export const createMeteorEffectConfig = (
+  targetPosition: THREE.Vector3,
+  count?: number,
+  radius?: number
+): { [key: string]: PrimitiveOrArray } => {
+  return {
+    targetPosition: vecToArray(targetPosition),
+    count,
+    radius,
+  };
+};
+
+const parseConfig = (config: { [key: string]: any }) => {
+  return {
+    targetPosition: arrayToVec(
+      config.targetPosition as [number, number, number]
+    ),
+    count: (config.count as number) || DEFAULT_COUNT,
+    radius: (config.radius as number) || DEFAULT_RADIUS,
+  };
+};
+
+export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
+  config,
   onHit,
   onImpact,
   onComplete,
-  debug = false,
 }) => {
+  const { targetPosition, count, radius } = parseConfig(config);
+
   const { world } = useRapier();
   const [meteorCompleteCount, setMeteorCompleteCount] = useState(0);
   const [targetPositions, setTargetPositions] = useState<THREE.Vector3[]>([]);
@@ -54,7 +85,7 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
     const randomOffsetRange = 20; // 시작 위치의 랜덤 범위
     const baseStart = new THREE.Vector3(
       targetPosition.x + randomOffsetXRef.current * randomOffsetRange,
-      targetPosition.y + rayOriginYOffset,
+      targetPosition.y + DEFAULT_RAY_ORIGIN_Y_OFFSET,
       targetPosition.z - 15 + randomOffsetZRef.current * randomOffsetRange
     );
     setCalculatedStartPosition(baseStart);
@@ -74,7 +105,7 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
 
       for (let i = 1; i < count; i++) {
         randomAngles[i] = Math.random() * Math.PI * 2;
-        randomRadii[i] = Math.random() * spread;
+        randomRadii[i] = Math.random() * DEFAULT_SPREAD;
       }
 
       // 나머지 메테오는 랜덤 위치에 생성 (미리 계산된 랜덤값 사용)
@@ -89,22 +120,24 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
 
         const rayOrigin = proposedTarget
           .clone()
-          .setY(proposedTarget.y + rayOriginYOffset);
+          .setY(proposedTarget.y + DEFAULT_RAY_ORIGIN_Y_OFFSET);
         const ray = new Ray(rayOrigin, new THREE.Vector3(0, -1, 0));
-        const maxDistance = rayOriginYOffset + 5;
+        const maxDistance = DEFAULT_RAY_ORIGIN_Y_OFFSET + 5;
         const hit = world.castRay(ray, maxDistance, true);
 
         if (hit) {
+          console.log("Hit, using hit point");
           const rapierHit = ray.pointAt(hit.timeOfImpact);
           const groundPoint = new THREE.Vector3(
             rapierHit.x,
-            rapierHit.y + 0.1,
+            rapierHit.y + 0.01,
             rapierHit.z
           );
           generated.push(groundPoint);
         } else {
+          console.log("No hit, using fallback");
           const fallback = proposedTarget.clone();
-          fallback.y += 0.1;
+          fallback.y = 0.01;
           generated.push(fallback);
         }
       }
@@ -113,12 +146,11 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
     // Set all target positions at once and mark as initialized
     setTargetPositions(generated);
     initializedRef.current = true;
-  }, [count, spread, rayOriginYOffset, targetPosition, world]);
+  }, [count, targetPosition, world]);
 
   const onHandleMeteorsComplete = () => {
-    console.log("Meteors onComplete");
     setMeteorCompleteCount((prev) => prev + 1);
-    onImpact?.(type, targetPositions[meteorCompleteCount]);
+    onImpact?.(targetPositions[meteorCompleteCount]);
     if (meteorCompleteCount === targetPositions.length) {
       onComplete?.();
     }
@@ -129,20 +161,28 @@ export const MeteorEffectController: React.FC<MeteorEffectProps> = ({
   return (
     <>
       {targetPositions.map((targetPos, index) => (
-        <Meteor
-          key={index}
-          type={type}
-          startPosition={calculatedStartPosition}
-          targetPosition={targetPos}
-          radius={radius}
-          duration={duration}
-          excludeCollisionGroup={excludeCollisionGroup}
-          onHit={onHit}
-          onImpact={onImpact}
-          onComplete={onHandleMeteorsComplete}
-          startDelay={100 * index + Math.random() * 100}
-          debug={debug}
-        />
+        <>
+          <Meteor
+            key={index}
+            startPosition={calculatedStartPosition}
+            targetPosition={targetPos}
+            radius={radius}
+            duration={DEFAULT_DURATION}
+            onHit={onHit}
+            onImpact={onImpact}
+            onComplete={onHandleMeteorsComplete}
+            startDelay={100 * index + Math.random() * 100}
+          />
+
+          <AreaIndicator
+            config={{
+              position: vecToArray(targetPos),
+              radius: radius,
+              duration: DEFAULT_DURATION,
+            }}
+            onComplete={onHandleMeteorsComplete}
+          />
+        </>
       ))}
     </>
   );
