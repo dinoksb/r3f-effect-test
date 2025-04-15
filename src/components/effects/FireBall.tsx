@@ -5,6 +5,7 @@ import { RigidBody, BallCollider } from "@react-three/rapier";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 import { FireBallEffectProps } from "./FireBallEffectController";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
+import { ActiveCollisionTypes } from "@dimforge/rapier3d-compat";
 
 export const FireBall: React.FC<FireBallEffectProps> = ({
   type,
@@ -130,6 +131,7 @@ export const FireBall: React.FC<FireBallEffectProps> = ({
       position={[startPosition.x, startPosition.y, startPosition.z]}
       colliders={false}
       sensor={true}
+      activeCollisionTypes={ActiveCollisionTypes.ALL}
       onIntersectionEnter={(other) => {
         const translation = rigidRef.current?.translation();
         const hitPosition = translation
