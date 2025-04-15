@@ -12,9 +12,9 @@ import { useFrame } from "@react-three/fiber";
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 type PrimitiveOrArray = Primitive | Primitive[];
 
-const DEFAULT_OPACITY = 0.4; // 약간 더 불투명하게 조정 가능
-const DEFAULT_SIZE = 0.5; // 전체 효과의 최대 크기/퍼짐 정도
-const DEFAULT_DURATION = 500; // 지속 시간 조정 가능
+const DEFAULT_OPACITY = 1;
+const DEFAULT_SIZE = 0.5;
+const DEFAULT_DURATION = 500;
 const PARTICLE_COUNT = 8;
 const SPREAD_RADIUS = 0.5;
 const PARTICLE_BASE_SIZE = 0.3;
@@ -64,15 +64,20 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
   const { startPosition, size, opacity, duration } = parseConfig(config);
   const [active, setActive] = useState(true);
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null!);
-  const dummyRef = useRef(new THREE.Object3D()); // 각 인스턴스의 Matrix 업데이트용 더미 객체
+  const dummyRef = useRef(new THREE.Object3D());
   const startTime = useRef(Date.now());
-  const effectScaleRef = useRef(0); // 전체 효과의 스케일 (퍼짐 정도) 제어
+  const effectScaleRef = useRef(0);
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // Effect cleanup function (변경 없음)
   const removeDust = useCallback(() => {
     if (active) {
       setActive(false);
-      if (onComplete) onComplete();
+      if (onCompleteRef.current) onCompleteRef.current();
     }
   }, [active]);
 
@@ -224,16 +229,14 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
   return (
     <instancedMesh
       ref={instancedMeshRef}
-      args={[undefined, undefined, PARTICLE_COUNT]} // Geometry, Material은 자식으로 정의, Count 전달
-      position={startPosition} // 전체 그룹의 위치 설정
+      args={[undefined, undefined, PARTICLE_COUNT]}
+      position={startPosition}
     >
-      {/* 작은 구체 지오메트리 사용 (폴리곤 수 줄임) */}
       <sphereGeometry args={[1, 6, 6]} />
-      {/* 기존 머티리얼 설정 유지 (AdditiveBlending으로 밝은 효과) */}
       <meshBasicMaterial
         color="white"
-        transparent={true} // transparent는 boolean 값으로 설정
-        opacity={opacity} // 초기 투명도 (useFrame에서 동적으로 변경됨)
+        transparent={true}
+        opacity={opacity}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
       />

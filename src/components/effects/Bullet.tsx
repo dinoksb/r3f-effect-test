@@ -1,5 +1,11 @@
 import * as THREE from "three";
-import React, { useRef, useEffect, useMemo, useState } from "react";
+import React, {
+  useRef,
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+} from "react";
 import { useFrame } from "@react-three/fiber";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
@@ -39,17 +45,22 @@ export const Bullet: React.FC<BulletProps> = ({
   const normalizedDirection = direction.clone().normalize();
   const bulletGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.3);
   const bulletMaterial = new THREE.MeshBasicMaterial({ color: "orange" });
+  const onCompleteRef = useRef(onComplete);
 
   // 생성 시간 기록
   const startTime = useRef(Date.now());
 
   // 총알 제거 함수
-  const removeBullet = () => {
+  const removeBullet = useCallback(() => {
     if (active) {
       setActive(false);
-      if (onComplete) onComplete();
+      if (onCompleteRef.current) onCompleteRef.current();
     }
-  };
+  }, [active]);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     // Reset the timer when the component mounts
@@ -65,7 +76,7 @@ export const Bullet: React.FC<BulletProps> = ({
     return () => {
       clearTimeout(timer);
     };
-  }, [duration]);
+  }, [duration, removeBullet]);
 
   useFrame(() => {
     if (!active || !rigidRef.current) return;
