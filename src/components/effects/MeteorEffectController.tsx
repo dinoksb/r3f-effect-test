@@ -14,7 +14,7 @@ const DEFAULT_DURATION = 2000;
 const DEFAULT_SPREAD = 10;
 const DEFAULT_RAY_ORIGIN_Y_OFFSET = 15;
 
-// Meteor 마법 Props
+// Meteor Magic Props
 export interface MeteorEffectControllerProps {
   config: { [key: string]: PrimitiveOrArray };
   onHit?: (other: IntersectionEnterPayload, pos: THREE.Vector3) => void;
@@ -72,17 +72,17 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
   const [calculatedStartPosition, setCalculatedStartPosition] =
     useState<THREE.Vector3>();
 
-  // 랜덤 요소를 저장할 ref - 컴포넌트 라이프사이클 동안 값이 유지됨
+  // Random elements ref - values are maintained throughout component lifecycle
   const initializedRef = useRef(false);
   const randomOffsetXRef = useRef(Math.random() * 2 - 1);
   const randomOffsetZRef = useRef(Math.random() * 2 - 1);
 
   // Generate all meteor target positions at once based on the provided target position
   useEffect(() => {
-    if (initializedRef.current) return; // 이미 초기화되었으면 다시 실행하지 않음
+    if (initializedRef.current) return; // Don't run again if already initialized
 
-    // 랜덤값을 ref에서 가져와서 사용 - 리렌더링 시에도 같은 값 유지
-    const randomOffsetRange = 20; // 시작 위치의 랜덤 범위
+    // Use random values from ref - maintains the same values even after re-rendering
+    const randomOffsetRange = 20; // Random range for start position
     const baseStart = new THREE.Vector3(
       targetPosition.x + randomOffsetXRef.current * randomOffsetRange,
       targetPosition.y + DEFAULT_RAY_ORIGIN_Y_OFFSET,
@@ -92,14 +92,14 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
 
     const generated: THREE.Vector3[] = [];
 
-    // 메테오가 1개일 때는 targetPosition을 그대로 사용
+    // When there's only one meteor, use targetPosition as is
     if (count === 1) {
       generated.push(targetPosition.clone());
     } else {
-      // 첫 번째 메테오는 항상 정확한 targetPosition
+      // First meteor always uses the exact targetPosition
       generated.push(targetPosition.clone());
 
-      // 각 메테오 위치에 대한 랜덤값 미리 생성 및 고정
+      // Pre-generate and fix random values for each meteor position
       const randomAngles: number[] = [];
       const randomRadii: number[] = [];
 
@@ -108,7 +108,7 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
         randomRadii[i] = Math.random() * DEFAULT_SPREAD;
       }
 
-      // 나머지 메테오는 랜덤 위치에 생성 (미리 계산된 랜덤값 사용)
+      // Remaining meteors are generated at random positions (using pre-calculated random values)
       for (let i = 1; i < count; i++) {
         const randomAngle = randomAngles[i];
         const randomRadius = randomRadii[i];

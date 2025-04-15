@@ -32,7 +32,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
 }) => {
   const [spawned, setSpawned] = useState(false);
 
-  // 현재 레이저 위치와 방향을 추적하는 state 추가
+  // Add state to track current laser position and direction
   const [currentPosition, setCurrentPosition] = useState(
     playerTransformRef?.current?.position.clone()
   );
@@ -40,7 +40,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
     playerTransformRef?.current?.direction.clone().normalize()
   );
 
-  // useFrame 대신 사용할 애니메이션 루프 업데이트
+  // Animation loop update to use instead of useFrame
   useEffect(() => {
     let frameId: number;
     const startTime = Date.now();
@@ -49,7 +49,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
     const updateLoop = () => {
       if (!isActive) return;
 
-      // 동적 업데이트: 외부에서 제공한 콜백을 통해 최신 위치와 방향 가져오기
+      // Dynamic update: Get the latest position and direction through the callback provided externally
       if (playerTransformRef?.current?.position) {
         setCurrentPosition(playerTransformRef.current.position.clone());
       }
@@ -60,7 +60,7 @@ export const LaserEffectController: React.FC<LaserEffectProps> = ({
         );
       }
 
-      // 지속 시간이 지나면 종료
+      // End when duration has passed
       const elapsed = Date.now() - startTime;
       if (elapsed > duration) {
         isActive = false;

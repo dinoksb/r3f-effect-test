@@ -8,7 +8,7 @@ import React, {
 } from "react";
 import { useFrame } from "@react-three/fiber";
 
-// --- 기존 유틸리티 및 타입 정의 (변경 없음) ---
+// --- Existing utility and type definitions (no changes) ---
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 type PrimitiveOrArray = Primitive | Primitive[];
 
@@ -53,7 +53,6 @@ const parseConfig = (config: { [key: string]: any }) => {
     duration: (config.duration as number) || DEFAULT_DURATION,
   };
 };
-// --- 기존 유틸리티 및 타입 정의 끝 ---
 
 export interface DustProps {
   config: { [key: string]: PrimitiveOrArray };
@@ -69,11 +68,6 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
   const effectScaleRef = useRef(0);
   const onCompleteRef = useRef(onComplete);
 
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  }, [onComplete]);
-
-  // Effect cleanup function (변경 없음)
   const removeDust = useCallback(() => {
     if (active) {
       setActive(false);
@@ -81,52 +75,55 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
     }
   }, [active]);
 
-  // 각 인스턴스의 초기 상대 위치와 기본 스케일을 미리 계산 (useMemo로 한 번만 실행)
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   const instanceData = useMemo(() => {
     const data = [];
-    const basePosition = new THREE.Vector3(); // 임시 벡터 재사용
+    const basePosition = new THREE.Vector3(); // Temporary vector for reuse
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      // 구 형태의 랜덤 오프셋 생성 (바닥에 좀 더 깔리도록 y는 약간만)
+      // Creating random offset in sphere shape (with less spread in Y direction to keep particles closer to ground)
       basePosition
         .set(
           (Math.random() - 0.5) * 2,
-          Math.random() * 0.3, // Y 방향으로는 덜 퍼지게
+          Math.random() * 0.3, // Less spread in Y direction
           (Math.random() - 0.5) * 2
         )
         .normalize()
         .multiplyScalar(Math.random() * SPREAD_RADIUS);
 
-      // 각 입자 크기에도 약간의 랜덤성 부여
-      const scale = PARTICLE_BASE_SIZE * (0.6 + Math.random() * 0.8); // 60% ~ 140% 크기 변화
+      // Add some randomness to each particle size
+      const scale = PARTICLE_BASE_SIZE * (0.6 + Math.random() * 0.8); // 60% ~ 140% size variation
 
       data.push({
-        positionOffset: basePosition.clone(), // 복제해서 저장
+        positionOffset: basePosition.clone(), // Store a clone
         baseScale: scale,
       });
     }
     return data;
-  }, []); // 의존성 배열이 비어있으므로 컴포넌트 마운트 시 한 번만 실행
+  }, []); // Empty dependency array ensures this runs only once when component mounts
 
-  // Effect 설정 및 제거 타이머 (useEffect)
+  // Setup effect and removal timer (useEffect)
   useEffect(() => {
-    // 컴포넌트 마운트 또는 주요 config 변경 시 상태 초기화
+    // Initialize state when component mounts or when main config changes
     startTime.current = Date.now();
     effectScaleRef.current = 0;
     setActive(true);
 
-    // InstancedMesh 초기화 (모든 인스턴스를 스케일 0으로 시작)
+    // Initialize InstancedMesh (start all instances with scale 0)
     if (instancedMeshRef.current) {
       instanceData.forEach((data, i) => {
-        dummyRef.current.position.copy(data.positionOffset); // 초기 오프셋 적용
-        dummyRef.current.scale.setScalar(0); // 스케일 0에서 시작
+        dummyRef.current.position.copy(data.positionOffset);
+        dummyRef.current.scale.setScalar(0);
         dummyRef.current.updateMatrix();
         instancedMeshRef.current.setMatrixAt(i, dummyRef.current.matrix);
       });
       instancedMeshRef.current.instanceMatrix.needsUpdate = true;
     }
 
-    // 제거 타이머 설정
+    // Set removal timer
     const timer = setTimeout(() => {
       removeDust();
     }, duration);
@@ -134,55 +131,55 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
     return () => {
       clearTimeout(timer);
     };
-    // config 객체 전체를 의존성으로 넣으면 리렌더링 시마다 재실행될 수 있으므로 주의
-    // 필요하다면 startPosition, duration 등 주요 값만 넣기
+    // Be careful adding the entire config object as a dependency as it may cause re-execution on every render
+    // If needed, only add key values like startPosition, duration, etc.
   }, [config, duration, removeDust, instanceData]);
 
-  // 애니메이션 루프 (useFrame)
+  // Animation loop (useFrame)
   useFrame(() => {
     if (!active || !instancedMeshRef.current) return;
 
     const elapsed = Date.now() - startTime.current;
     let currentEffectScale = 0;
 
-    // 전체 효과의 크기/퍼짐 정도를 시간에 따라 계산 (기존 로직 활용)
+    // Calculate the size/spread of the entire effect based on time (using existing logic)
     const growDuration = duration * 0.2;
     const shrinkDuration = duration * 0.8;
 
     if (elapsed < growDuration) {
       // Grow phase
       const growProgress = elapsed / growDuration;
-      currentEffectScale = THREE.MathUtils.lerp(0, size, growProgress); // config의 size가 최대 크기/퍼짐 정도
+      currentEffectScale = THREE.MathUtils.lerp(0, size, growProgress); // config's size is the maximum size/spread
     } else if (elapsed < duration) {
       // Shrink phase
       const shrinkProgress = (elapsed - growDuration) / shrinkDuration;
       currentEffectScale = THREE.MathUtils.lerp(size, 0, shrinkProgress);
     } else {
-      currentEffectScale = 0; // 확실하게 0으로
+      currentEffectScale = 0; // Definitely set to 0
     }
     effectScaleRef.current = currentEffectScale;
 
-    // 각 인스턴스의 위치와 스케일 업데이트
+    // Update the position and scale of each instance
     instanceData.forEach((data, i) => {
-      // 1. 위치: 초기 오프셋에 현재 effectScale을 곱하여 퍼지거나 모이도록 함
+      // 1. Position: Multiply initial offset by current effectScale to spread or gather
       dummyRef.current.position
         .copy(data.positionOffset)
         .multiplyScalar(effectScaleRef.current);
 
-      // 2. 스케일: 기본 스케일에 현재 effectScale을 곱함 (전체적으로 커졌다 작아지도록)
+      // 2. Scale: Multiply base scale by current effectScale (to grow and shrink overall)
       dummyRef.current.scale.setScalar(data.baseScale * effectScaleRef.current);
 
-      // (선택적) 약간의 추가 움직임: 위로 살짝 뜨거나 바깥으로 퍼지는 등
+      // (Optional) Add slight additional movement: float up or spread outward
       // dummyRef.current.position.y += 0.001 * effectScaleRef.current;
 
-      dummyRef.current.updateMatrix(); // 더미 객체의 매트릭스 업데이트
-      instancedMeshRef.current.setMatrixAt(i, dummyRef.current.matrix); // 인스턴스 매트릭스 설정
+      dummyRef.current.updateMatrix(); // Update dummy object's matrix
+      instancedMeshRef.current.setMatrixAt(i, dummyRef.current.matrix); // Set instance matrix
     });
 
-    // 매트릭스 업데이트 플래그 설정
+    // Set matrix update flag
     instancedMeshRef.current.instanceMatrix.needsUpdate = true;
 
-    // (선택적) 투명도 조절: 사라질 때 더 빠르게 투명해지도록
+    // (Optional) Adjust opacity: fade out faster when disappearing
     const material = instancedMeshRef.current
       .material as THREE.MeshBasicMaterial;
     if (elapsed < growDuration) {
@@ -190,17 +187,17 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
         0,
         opacity,
         elapsed / growDuration
-      ); // 나타날 때 투명도 조절
+      ); // Adjust opacity when appearing
     } else if (elapsed < duration) {
       const shrinkProgress = (elapsed - growDuration) / shrinkDuration;
-      material.opacity = THREE.MathUtils.lerp(opacity, 0, shrinkProgress); // 사라질 때 투명도 조절
+      material.opacity = THREE.MathUtils.lerp(opacity, 0, shrinkProgress); // Adjust opacity when disappearing
     } else {
       material.opacity = 0;
     }
 
-    // 효과 종료 시간 체크
+    // Check effect end time
     if (elapsed >= duration && active) {
-      // 종료 직전에 확실히 안 보이게 처리하고 제거
+      // Make sure it's invisible before removal
       if (instancedMeshRef.current) {
         instanceData.forEach((_, i) => {
           dummyRef.current.scale.setScalar(0);
@@ -216,10 +213,10 @@ export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
     }
   });
 
-  // active가 false면 렌더링 안 함
+  // Don't render if active is false
   if (!active) return null;
 
-  // 필수 설정값 확인
+  // Check required configuration values
   if (!startPosition || !size || !opacity || !duration) {
     console.error("[Dust] Missing required config properties");
     onComplete?.();

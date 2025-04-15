@@ -10,7 +10,7 @@ const DEFAULT_RADIUS = 3;
 const DEFAULT_HEIGHT = 0;
 const DEFAULT_OPACITY = 0.8;
 
-// PoisonSwamp 마법 Props
+// PoisonSwamp Magic Props
 export interface PoisonSwampEffectProps {
   config: { [key: string]: PrimitiveOrArray };
   onHit?: (other?: unknown, pos?: THREE.Vector3) => void;

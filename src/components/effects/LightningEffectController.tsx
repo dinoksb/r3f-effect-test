@@ -141,7 +141,7 @@ export const LightningEffectController: React.FC<
         clearTimeout(timerRef.current);
       }
     };
-  }, [parsedConfig, onComplete]); // ✅ 안전하게 관리됨
+  }, [parsedConfig, onComplete]); // ✅ Safely managed
 
   const handleHit = (other: unknown, pos: THREE.Vector3) => {
     onHit?.(other, pos);

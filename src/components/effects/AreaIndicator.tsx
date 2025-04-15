@@ -57,7 +57,7 @@ const parseConfig = (config: { [key: string]: any }) => {
 };
 
 /**
- * 메테오가 떨어질 위치를 바닥에 표시하는 이펙트 컴포넌트
+ * Effect component that shows where meteors will land on the ground
  */
 export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
   config,
@@ -88,19 +88,19 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
     const elapsedMs = Date.now() - startTime.current;
     const progress = Math.min(elapsedMs / duration, 1);
 
-    // 전체 진행에 따른 페이드 아웃 (마지막 20%에서 페이드 아웃)
+    // Fade out based on overall progress (fade out in the last 20%)
     const opacity =
       progress > 0.8
-        ? (1 - progress) * 5 // 마지막 20%에서 빠르게 페이드 아웃
+        ? (1 - progress) * 5 // Quick fade out in the last 20%
         : 1;
 
-    // 진행도에 따라 점점 빨라지는 펄스 애니메이션
+    // Pulse animation that accelerates with progress
     const pulseSpeedFactor = 1 + progress * 0.3;
     const pulseValue =
       Math.sin(elapsedMs * 0.01 * pulseSpeed * pulseSpeedFactor) * 0.5 + 0.5;
 
     if (outerRingRef.current) {
-      // 애니메이션 진행에 따라 외부 링이 약간 확장됨
+      // Outer ring expands slightly as animation progresses
       const material = outerRingRef.current.material as THREE.MeshBasicMaterial;
       material.opacity = opacity;
       material.needsUpdate = true;
@@ -110,13 +110,13 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
     }
 
     if (innerRingRef.current) {
-      // 내부 링은 펄스 효과
+      // Inner ring has pulse effect
       const material = innerRingRef.current.material as THREE.MeshBasicMaterial;
       material.opacity = opacity * 0.7 * (1 - pulseValue * 0.5);
       material.color.setStyle(color);
       material.needsUpdate = true;
 
-      // 내부 링은 외부 링의 크기를 기준으로 펄싱
+      // Inner ring pulses based on outer ring size
       const outerScale = progress <= 0.5 ? 0.7 + progress * 2 * 0.3 : 1.0;
       innerRingScale.current = outerScale * (0.5 + pulseValue * 0.65);
       innerRingRef.current.scale.set(
@@ -146,7 +146,7 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
   }
   if (destroyed) return null;
 
-  // Y 좌표는 바닥에 딱 붙게 약간 올려줌 (z-fighting 방지)
+  // Y coordinate is slightly raised to stick to the floor (prevents z-fighting)
   const adjustedPosition = new THREE.Vector3(
     position.x,
     position.y + 0.01,
@@ -155,7 +155,7 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
 
   return (
     <group position={adjustedPosition} rotation={[-Math.PI / 2, 0, 0]}>
-      {/* 외부 링 - 메인 표시기 */}
+      {/* Outer ring - main indicator */}
       <Ring
         ref={outerRingRef}
         args={[radius * 0.95, radius, 64, 1, 0, Math.PI * 2]}
@@ -170,7 +170,7 @@ export const AreaIndicator: React.FC<AreaIndicatorProps> = ({
         />
       </Ring>
 
-      {/* 내부 링 - 보조 표시기 */}
+      {/* Inner ring - secondary indicator */}
       <Ring ref={innerRingRef} args={[0, radius * 0.85, 32, 1, 0, Math.PI * 2]}>
         <meshBasicMaterial
           color={color}

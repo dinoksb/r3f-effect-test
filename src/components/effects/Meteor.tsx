@@ -27,10 +27,10 @@ export interface MeteorProps {
 
 function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   const [progress, setProgress] = useState(0);
-  // startDelay > 0이면, 해당 시간이 지난 후에 활성화
+  // If startDelay > 0, activate after that time has passed
   const [active, setActive] = useState(startDelay === 0);
 
-  // 실제 시작 시간을 delay만큼 늦춰서 세팅
+  // Set the actual start time delayed by the startDelay
   const startRef = useRef<number>(Date.now() + startDelay);
 
   useEffect(() => {
@@ -72,14 +72,14 @@ export const Meteor: React.FC<MeteorProps> = ({
 
   const [showImpact, setShowImpact] = useState(false);
 
-  // duration 동안 0~1 로 증가하는 progress / 활성화 여부 active
+  // Progress increases from 0 to 1 during duration / active status
   const { progress, active } = useProgress(duration, startDelay);
 
-  // 충돌 이펙트에 쓰이는 공통 반경/지속
+  // Common radius/duration used for collision effects
   const impactRadius = radius;
   const impactDuration = 600;
 
-  // 시각 요소 크기
+  // Visual element sizes
   const meteorSize = impactRadius * 0.9;
   const emberSize = meteorSize * 0.7;
   const trailWidth = radius * 2.0;
@@ -89,7 +89,7 @@ export const Meteor: React.FC<MeteorProps> = ({
     return targetPosition.clone().sub(startPosition);
   }, [startPosition, targetPosition]);
 
-  // 충돌 이벤트 처리
+  // Handle collision events
   const handleOnHit = useCallback(
     (other: unknown) => {
       console.log("Meteor onHit", other, targetPosition);
@@ -99,15 +99,15 @@ export const Meteor: React.FC<MeteorProps> = ({
   );
 
   useFrame(() => {
-    // 아직 시작 전이거나, 이미 임팩트 끝나면 무시
+    // Ignore if not started yet or impact already finished
     if (!active) return;
 
-    // 0~1 사이의 progress만큼 위치 보간
+    // Interpolate position based on progress between 0 and 1
     const currentPosition = startPosition
       .clone()
       .add(direction.clone().multiplyScalar(progress));
 
-    // Meteor 본체 회전/랜덤 스케일
+    // Meteor body rotation/random scale
     if (meteorRef.current) {
       meteorRef.current.position.copy(currentPosition);
       meteorRef.current.rotation.x += 0.01;
@@ -117,7 +117,7 @@ export const Meteor: React.FC<MeteorProps> = ({
       meteorRef.current.scale.set(scale, scale, scale);
     }
 
-    // Ember(내부 불덩이) 회전/랜덤 스케일
+    // Ember (inner fireball) rotation/random scale
     if (emberRef.current) {
       emberRef.current.position.copy(currentPosition);
       emberRef.current.rotation.y += 0.05;
@@ -125,13 +125,13 @@ export const Meteor: React.FC<MeteorProps> = ({
       emberRef.current.scale.set(emberScale, emberScale, emberScale);
     }
 
-    // 광원 위치/밝기
+    // Light position/brightness
     if (lightRef.current) {
       lightRef.current.position.copy(currentPosition);
       lightRef.current.intensity = THREE.MathUtils.randFloat(3, 5);
     }
 
-    // 타겟 근처 도달 시 임팩트 이펙트 시작
+    // Start impact effect when reaching near target
     if (!showImpact && currentPosition.distanceTo(targetPosition) < 0.3) {
       setShowImpact(true);
       onComplete?.();
@@ -142,7 +142,7 @@ export const Meteor: React.FC<MeteorProps> = ({
 
   return (
     <>
-      {/* Meteor 본체 & Ember & Trail (임팩트 전까지) */}
+      {/* Meteor body & Ember & Trail (until impact) */}
       {!showImpact && (
         <>
           <mesh ref={meteorRef} position={startPosition.clone()}>
@@ -187,7 +187,7 @@ export const Meteor: React.FC<MeteorProps> = ({
         </>
       )}
 
-      {/* 임팩트 발생 시 (시각 이펙트 + 폭발 + Hitbox) */}
+      {/* When impact occurs (visual effects + explosion + Hitbox) */}
       {showImpact && (
         <Hitbox
           position={targetPosition}
@@ -222,6 +222,7 @@ const Hitbox: React.FC<HitboxProps> = ({
   const [destroyed, setDestroyed] = useState(false);
 
   // duration이 끝나면 onDone -> setDestroyed(true)
+  // When duration ends, onDone -> setDestroyed(true)
   useProgress(duration, 0, () => setDestroyed(true));
 
   if (destroyed) return null;
@@ -243,6 +244,7 @@ const Hitbox: React.FC<HitboxProps> = ({
     >
       <BallCollider args={[radius]} />
       {/* Debug 시각화 */}
+      {/* Debug visualization */}
       {debug && (
         <mesh>
           <sphereGeometry args={[radius, 16, 16]} />

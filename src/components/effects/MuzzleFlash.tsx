@@ -1,4 +1,4 @@
-// MuzzleFlash.tsx (새 파일)
+// MuzzleFlash.tsx (new file)
 import React, { useState, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
@@ -6,16 +6,16 @@ import { useFrame } from "@react-three/fiber";
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 type PrimitiveOrArray = Primitive | Primitive[];
 
-// --- Muzzle Flash 설정 ---
-const FLASH_PETAL_COUNT = 5; // 화염 갈래 수
-const FLASH_PETAL_LENGTH = 0.4; // 각 갈래 길이
-const FLASH_PETAL_BASE_RADIUS = 0.03; // 각 갈래 밑면 반지름
-const FLASH_RADIAL_SEGMENTS = 4; // 각 갈래 원뿔 분할 수
-const FLASH_TILT_ANGLE = Math.PI / 4; // 화염 갈래 기울기 (45도)
-const FLASH_INNER_GLOW_SIZE = 0.08; // 중앙 빛 크기
-const FLASH_COLOR = "#FFA500"; // 주황색 계열
-const FLASH_INNER_COLOR = "#FFFF55"; // 더 밝은 노란색 중심
-const DEFAULT_DURATION = 100; // 기본 지속 시간
+// --- Muzzle Flash Configuration ---
+const FLASH_PETAL_COUNT = 5; // Number of flame petals
+const FLASH_PETAL_LENGTH = 0.4; // Length of each petal
+const FLASH_PETAL_BASE_RADIUS = 0.03; // Base radius of each petal
+const FLASH_RADIAL_SEGMENTS = 4; // Number of radial segments for each cone
+const FLASH_TILT_ANGLE = Math.PI / 4; // Tilt angle of flame petals (45 degrees)
+const FLASH_INNER_GLOW_SIZE = 0.08; // Size of the center glow
+const FLASH_COLOR = "#FFA500"; // Orange color
+const FLASH_INNER_COLOR = "#FFFF55"; // Brighter yellow for center
+const DEFAULT_DURATION = 100; // Default duration
 // ------------------------
 
 interface MuzzleFlashProps {
@@ -64,13 +64,13 @@ export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
   const { position, direction, duration } = parseConfig(config);
 
   const [visible, setVisible] = useState(true);
-  const startTime = useMemo(() => Date.now(), []); // 생성 시간 기록 (애니메이션용)
+  const startTime = useMemo(() => Date.now(), []); // Record creation time (for animation)
 
-  // 방향에 따른 회전 계산
+  // Calculate rotation based on direction
   const flashQuaternion = useMemo(() => {
     const quaternion = new THREE.Quaternion();
     const normalizedDirection = direction.clone().normalize();
-    // Z축(0,0,1)이 기본 방향인 그룹을 발사 방향으로 회전
+    // Rotate the group whose default direction is Z-axis (0,0,1) to the firing direction
     quaternion.setFromUnitVectors(
       new THREE.Vector3(0, 0, 1),
       normalizedDirection
@@ -78,7 +78,7 @@ export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
     return quaternion;
   }, [direction]);
 
-  // --- Muzzle Flash 관련 Memos ---
+  // --- Muzzle Flash Related Memos ---
   const petalGeometry = useMemo(
     () =>
       new THREE.ConeGeometry(
@@ -114,9 +114,9 @@ export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
       }),
     []
   );
-  // --- Muzzle Flash 관련 Memos 끝 ---
+  // --- End of Muzzle Flash Related Memos ---
 
-  // 자동 소멸 타이머
+  // Auto-destruction timer
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(false);
@@ -124,14 +124,14 @@ export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onComplete]); // id나 onComplete 함수가 변경되면 타이머 재설정
+  }, [duration, onComplete]); // Timer reset when id or onComplete function changes
 
-  // Opacity 애니메이션
+  // Opacity animation
   useFrame(() => {
     if (!visible) return;
     const elapsed = Date.now() - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    const opacity = 1.0 - progress; // 시간에 따라 투명도 감소
+    const opacity = 1.0 - progress; // Opacity decreases over time
 
     petalMaterial.opacity = opacity * 0.8;
     innerGlowMaterial.opacity = opacity;
@@ -142,14 +142,14 @@ export const MuzzleFlash: React.FC<MuzzleFlashProps> = ({
     return null;
   }
 
-  if (!visible) return null; // 보이지 않으면 렌더링 안 함
+  if (!visible) return null; // Don't render if not visible
 
   return (
     <group position={position} quaternion={flashQuaternion}>
-      {/* 중앙 빛 */}
+      {/* Center glow */}
       <mesh geometry={innerGlowGeometry} material={innerGlowMaterial} />
 
-      {/* 화염 갈래들 (ConeGeometry 사용 및 기울기 적용) */}
+      {/* Flame petals (using ConeGeometry with tilt applied) */}
       {Array.from({ length: FLASH_PETAL_COUNT }).map((_, i) => {
         const radialAngle = (i / FLASH_PETAL_COUNT) * Math.PI * 2;
         return (

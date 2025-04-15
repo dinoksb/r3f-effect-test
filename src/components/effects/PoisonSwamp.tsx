@@ -12,7 +12,7 @@ import {
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 
-// PoisonSwamp 마법 Props
+// PoisonSwamp Magic Props
 export interface PoisonSwampEffectProps {
   targetPosition: THREE.Vector3;
   duration: number; // effect duration(ms)
@@ -124,7 +124,7 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
     if (!other) return;
     const { handle } = other.collider ?? {};
     if (handle === undefined) return;
-    if (debug) console.log("충돌 감지:", other);
+    if (debug) console.log("Collision detected:", other);
 
     const now = performance.now();
     const state = collisionState.current;
@@ -143,12 +143,18 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
 
     const state = collisionState.current;
     if (debug) {
-      console.log("충돌 종료:", handle, other);
-      console.log("제거 전 충돌 객체 수:", state.collidingObjects.size);
+      console.log("Collision end:", handle, other);
+      console.log(
+        "Number of colliding objects before removal:",
+        state.collidingObjects.size
+      );
     }
     state.collidingObjects.delete(handle);
     if (debug) {
-      console.log("제거 후 충돌 객체 수:", state.collidingObjects.size);
+      console.log(
+        "Number of colliding objects after removal:",
+        state.collidingObjects.size
+      );
     }
   };
 

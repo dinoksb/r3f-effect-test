@@ -46,11 +46,9 @@ export const Bullet: React.FC<BulletProps> = ({
   const bulletGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.3);
   const bulletMaterial = new THREE.MeshBasicMaterial({ color: "orange" });
   const onCompleteRef = useRef(onComplete);
-
-  // 생성 시간 기록
   const startTime = useRef(Date.now());
 
-  // 총알 제거 함수
+  // Bullet removal function
   const removeBullet = useCallback(() => {
     if (active) {
       setActive(false);
@@ -68,7 +66,7 @@ export const Bullet: React.FC<BulletProps> = ({
     startTime.current = Date.now();
     setActive(true);
 
-    // 지정된 duration 후에 자동으로 총알 제거
+    // Automatically remove bullet after the specified duration
     const timer = setTimeout(() => {
       removeBullet();
     }, duration);
@@ -84,25 +82,25 @@ export const Bullet: React.FC<BulletProps> = ({
     const elapsed = Date.now() - startTime.current;
     const seconds = elapsed / 1000;
 
-    // 새 위치 = 초기 위치 + 방향 * 속도 * 경과시간
+    // New position = initial position + direction * speed * elapsed time
     const currentPos = startPosition
       .clone()
       .add(normalizedDirection.clone().multiplyScalar(speed * seconds));
 
-    // Rapier Kinematic Body 이동 업데이트
+    // Update Rapier Kinematic Body movement
     rigidRef.current?.setNextKinematicTranslation({
       x: currentPos.x,
       y: currentPos.y,
       z: currentPos.z,
     });
 
-    // 수명이 끝나면 소멸 (백업 체크)
+    // Destroy when lifetime ends (backup check)
     if (elapsed > duration) {
       removeBullet();
     }
   });
 
-  // 발사 방향으로의 회전 쿼터니언 계산
+  // Calculate rotation quaternion in the firing direction
   const bulletQuaternion = useMemo(() => {
     const quaternion = new THREE.Quaternion();
     quaternion.setFromUnitVectors(
@@ -112,12 +110,12 @@ export const Bullet: React.FC<BulletProps> = ({
     return quaternion;
   }, [normalizedDirection]);
 
-  // RigidBody를 위한 회전 & 위치 계산
+  // Calculate rotation & position for RigidBody
   const bulletRotation = useMemo(() => {
     return new THREE.Euler().setFromQuaternion(bulletQuaternion);
   }, [bulletQuaternion]);
 
-  // 총알의 실제 크기 계산 (기본 지오메트리 × 스케일)
+  // Calculate actual bullet size (base geometry × scale)
   const actualBulletSize = useMemo(() => {
     return {
       x: bulletGeometry.parameters.width * DEFAULT_SIZE.x,
@@ -126,7 +124,7 @@ export const Bullet: React.FC<BulletProps> = ({
     };
   }, [bulletGeometry.parameters]);
 
-  // 총알이 삭제된 경우 렌더링하지 않음
+  // Don't render if the bullet has been removed
   if (!active) return null;
 
   return (
@@ -142,15 +140,15 @@ export const Bullet: React.FC<BulletProps> = ({
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
           : undefined;
-        // 충돌 이벤트 발생
+        // Collision event triggered
         if (onHit) onHit(payload, hitPosition);
-        // 총알 제거
+        // Remove bullet
         removeBullet();
       }}
       gravityScale={0}
       collisionGroups={createCollisionGroups()}
     >
-      {/* 총알 충돌용 CuboidCollider - 기본 지오메트리 크기와 스케일 모두 고려 */}
+      {/* CuboidCollider for bullet collision - considers both base geometry size and scale */}
       <CuboidCollider
         args={[
           actualBulletSize.x / 2,
