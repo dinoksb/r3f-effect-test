@@ -208,10 +208,6 @@ const SingleImpactEffect: React.FC<SingleImpactEffectProps> = ({
         32
       );
     }
-
-    if (progress >= 1) {
-      // Effect simply fades out, no explicit cleanup needed here as parent controls mounting
-    }
   });
 
   return (
@@ -321,13 +317,6 @@ export interface LightningStrikeProps {
   debug?: boolean;
 }
 
-const createCollisionGroups = () => {
-  return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-    CollisionBitmask.AOE,
-    [CollisionBitmask.Player]
-  );
-};
-
 export const LightningStrike: React.FC<LightningStrikeProps> = ({
   commonStartPosition,
   targetPositions,
@@ -340,6 +329,13 @@ export const LightningStrike: React.FC<LightningStrikeProps> = ({
   const flashDuration = 50;
   // Define the effect radius to be shared by both impact effect and hitbox
   const effectRadius = 3;
+
+  const createCollisionGroups = useMemo(() => {
+    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionBitmask.AOE,
+      [CollisionBitmask.Player]
+    );
+  }, []);
 
   // Calculate center position of all targets
   const centerPosition = useMemo(() => {
@@ -382,7 +378,7 @@ export const LightningStrike: React.FC<LightningStrikeProps> = ({
       <Hitbox
         position={centerPosition}
         duration={duration}
-        excludeCollisionGroup={createCollisionGroups()}
+        excludeCollisionGroup={createCollisionGroups}
         onHit={onHit}
         debug={debug}
         radius={effectRadius}

@@ -45,6 +45,8 @@ export function EffectContainer() {
   // Handler for when an effect hits something (logic might be needed here)
   const handleFireBallEffectHit = useCallback(
     (other: IntersectionEnterPayload, pos?: Vector3, sender?: string) => {
+      console.log("handleFireBallEffectHit", other, pos, sender);
+
       if (sender) {
         if (other.rigidBody?.userData?.["account"] === sender) return false;
       }

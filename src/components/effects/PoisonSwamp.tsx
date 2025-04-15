@@ -167,6 +167,13 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
   const startColor = useMemo(() => new THREE.Color("#66ff66"), []);
   const midColor = useMemo(() => new THREE.Color("#44aa44"), []);
   const swampBaseColor = useMemo(() => new THREE.Color("#336633"), []);
+  // add collision groups
+  const createCollisionGroups = useMemo(() => {
+    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionBitmask.AOE,
+      excludeCollisionGroup
+    );
+  }, []);
 
   useFrame(() => {
     const now = performance.now();
@@ -269,13 +276,6 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
 
   const safeHeight = Math.max(Math.abs(calcHeight), calcHeight * 1.2);
 
-  // add collision groups
-  const collisionGroups =
-    RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionBitmask.AOE,
-      excludeCollisionGroup
-    );
-
   return (
     <group name="poison-swamp" ref={groupRef} position={targetPosition}>
       <Circle
@@ -302,7 +302,7 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
         sensor
         onIntersectionEnter={handleCollisionEnter}
         onIntersectionExit={handleCollisionExit}
-        collisionGroups={collisionGroups}
+        collisionGroups={createCollisionGroups}
       >
         <CylinderCollider
           args={[safeHeight, radius * 0.95]}

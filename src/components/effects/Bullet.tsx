@@ -24,13 +24,6 @@ export interface BulletProps {
   onComplete?: () => void;
 }
 
-const createCollisionGroups = () => {
-  return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-    DEFAULT_MEMBERSHIP_COLLISION_GROUP,
-    DEFAULT_EXCLUDE_COLLISION_GROUP
-  );
-};
-
 export const Bullet: React.FC<BulletProps> = ({
   startPosition,
   direction,
@@ -55,6 +48,13 @@ export const Bullet: React.FC<BulletProps> = ({
       if (onCompleteRef.current) onCompleteRef.current();
     }
   }, [active]);
+
+  const createCollisionGroups = useMemo(() => {
+    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      DEFAULT_MEMBERSHIP_COLLISION_GROUP,
+      DEFAULT_EXCLUDE_COLLISION_GROUP
+    );
+  }, []);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
@@ -146,7 +146,7 @@ export const Bullet: React.FC<BulletProps> = ({
         removeBullet();
       }}
       gravityScale={0}
-      collisionGroups={createCollisionGroups()}
+      collisionGroups={createCollisionGroups}
     >
       {/* CuboidCollider for bullet collision - considers both base geometry size and scale */}
       <CuboidCollider

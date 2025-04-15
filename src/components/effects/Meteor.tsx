@@ -92,7 +92,6 @@ export const Meteor: React.FC<MeteorProps> = ({
   // Handle collision events
   const handleOnHit = useCallback(
     (other: unknown) => {
-      console.log("Meteor onHit", other, targetPosition);
       onHit?.(other, targetPosition);
     },
     [onHit, targetPosition]
@@ -221,9 +220,14 @@ const Hitbox: React.FC<HitboxProps> = ({
   const rigidRef = useRef(null);
   const [destroyed, setDestroyed] = useState(false);
 
-  // duration이 끝나면 onDone -> setDestroyed(true)
-  // When duration ends, onDone -> setDestroyed(true)
   useProgress(duration, 0, () => setDestroyed(true));
+
+  const createCollisionGroups = useMemo(() => {
+    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionBitmask.AOE,
+      excludeCollisionGroup
+    );
+  }, []);
 
   if (destroyed) return null;
 
@@ -237,10 +241,7 @@ const Hitbox: React.FC<HitboxProps> = ({
       onIntersectionEnter={(other) => {
         onHit?.(other);
       }}
-      collisionGroups={RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-        CollisionBitmask.AOE,
-        excludeCollisionGroup
-      )}
+      collisionGroups={createCollisionGroups}
     >
       <BallCollider args={[radius]} />
       {/* Debug 시각화 */}

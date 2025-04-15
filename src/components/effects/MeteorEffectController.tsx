@@ -126,7 +126,6 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
         const hit = world.castRay(ray, maxDistance, true);
 
         if (hit) {
-          console.log("Hit, using hit point");
           const rapierHit = ray.pointAt(hit.timeOfImpact);
           const groundPoint = new THREE.Vector3(
             rapierHit.x,
@@ -135,7 +134,6 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
           );
           generated.push(groundPoint);
         } else {
-          console.log("No hit, using fallback");
           const fallback = proposedTarget.clone();
           fallback.y = 0.01;
           generated.push(fallback);

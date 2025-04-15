@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import * as THREE from "three";
 import { FireBall } from "./FireBall";
 import { IntersectionEnterPayload } from "@react-three/rapier";

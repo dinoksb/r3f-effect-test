@@ -128,24 +128,24 @@ export const FireBall: React.FC<FireBallProps> = ({
       ref={rigidRef}
       // Set Sensor collision mode
       type="kinematicPosition"
+      position={[startPosition.x, startPosition.y, startPosition.z]}
       colliders={false} // Shape defined by BallCollider below
       sensor={true} // Collision events only, no physical reaction
-      // Collision (intersection) event
-      onIntersectionEnter={(payload) => {
+      onIntersectionEnter={(other) => {
+        console.log("onIntersectionEnter", other);
         // Called when FireBall intersects another RigidBody
         const translation = rigidRef.current?.translation();
         const hitPosition = translation
           ? new THREE.Vector3(translation.x, translation.y, translation.z)
           : undefined;
-        if (onHit?.(payload, hitPosition)) {
+        if (onHit?.(other, hitPosition)) {
           onComplete?.();
           setDestroyed(true);
         }
       }}
-      collisionGroups={createCollisionGroups()}
       // Set initial position
-      position={[startPosition.x, startPosition.y, startPosition.z]}
       // Not affected by gravity, etc.
+      collisionGroups={createCollisionGroups()}
       gravityScale={0}
     >
       {/* FireBall collider (radius=0.4) */}

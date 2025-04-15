@@ -95,7 +95,6 @@ export const LightningEffectController: React.FC<
       const hit = world.castRay(ray, maxDistance, true);
 
       if (hit) {
-        console.log("hit", hit);
         const rapierHitPoint = ray.pointAt(hit.timeOfImpact);
         const threeHitPoint = new THREE.Vector3(
           rapierHitPoint.x,
@@ -105,12 +104,6 @@ export const LightningEffectController: React.FC<
         threeHitPoint.y += 0.01;
         targets.push(threeHitPoint);
       } else {
-        console.log(
-          "no hit - max distance:",
-          maxDistance,
-          "ray origin Y:",
-          individualRayOrigin.y
-        );
         const fallbackTarget = targetPosition.clone();
         fallbackTarget.y = 0.01;
         targets.push(fallbackTarget);
@@ -141,7 +134,7 @@ export const LightningEffectController: React.FC<
         clearTimeout(timerRef.current);
       }
     };
-  }, [parsedConfig, onComplete]); // ✅ Safely managed
+  }, [parsedConfig, onComplete]);
 
   const handleHit = (other: unknown, pos: THREE.Vector3) => {
     onHit?.(other, pos);

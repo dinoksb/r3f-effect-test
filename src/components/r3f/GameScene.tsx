@@ -1,8 +1,7 @@
-import React, { Suspense } from "react";
+import React from "react";
 import { Canvas } from "@react-three/fiber";
 import { Experience } from "./Experience";
 import WebGLVersionChecker from "../../WebGLVersionChecker";
-import { EffectContainer } from "../EffectContainer";
 import { Physics } from "@react-three/rapier";
 
 /**
@@ -20,12 +19,9 @@ export const GameScene: React.FC = () => {
           (e.target as HTMLCanvasElement).requestPointerLock();
         }}
       >
-        <Physics debug={false}>
-          <Suspense fallback={null}>
-            <Experience />
-            <WebGLVersionChecker />
-            <EffectContainer />
-          </Suspense>
+        <Physics debug={false} paused={true}>
+          <Experience />
+          <WebGLVersionChecker />
         </Physics>
       </Canvas>
     </>

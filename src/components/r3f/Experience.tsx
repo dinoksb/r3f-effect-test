@@ -8,6 +8,7 @@ import { Floor } from "./Floor";
 import { RandomBoxes } from "./RandomBoxes";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { useEffectStore } from "../store/effectStore";
+import { EffectContainer } from "../EffectContainer";
 
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 type PrimitiveOrArray = Primitive | Primitive[];
@@ -306,6 +307,7 @@ export function Experience() {
           </FreeViewController>
         </KeyboardControls>
         <RandomBoxes count={20} range={10} />
+        <EffectContainer />
 
         <Floor />
       </Physics>
