@@ -220,9 +220,7 @@ export function EffectContainer() {
             <Dust
               key={effect.key}
               config={effect.effectData.config}
-              onComplete={() => {
-                handleEffectComplete(effect.key);
-              }}
+              onComplete={() => handleEffectComplete(effect.key)}
             />
           );
         // Add cases for other effect types here
