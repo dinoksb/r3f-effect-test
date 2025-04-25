@@ -54,12 +54,15 @@ const parseConfig = (config: { [key: string]: any }) => {
   };
 };
 
-export interface DustProps {
+export interface EnvironmentalDustProps {
   config: { [key: string]: PrimitiveOrArray };
   onComplete: () => void;
 }
 
-export const Dust: React.FC<DustProps> = ({ config, onComplete }) => {
+export const EnvironmentalDust: React.FC<EnvironmentalDustProps> = ({
+  config,
+  onComplete,
+}) => {
   const { startPosition, size, opacity, duration } = parseConfig(config);
   const [active, setActive] = useState(true);
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null!);

@@ -7,7 +7,7 @@ type PrimitiveOrArray = Primitive | Primitive[];
 
 const DEFAULT_SCALE = 1;
 
-interface ExplosionProps {
+interface ExplosionDustProps {
   config: { [key: string]: PrimitiveOrArray };
   onComplete?: () => void;
 }
@@ -61,7 +61,10 @@ function makeParticles(color: string, speed: number) {
 }
 
 // "Explosion/smoke" effect appearing at the collision point
-export const Explosion: React.FC<ExplosionProps> = ({ config, onComplete }) => {
+export const ExplosionDust: React.FC<ExplosionDustProps> = ({
+  config,
+  onComplete,
+}) => {
   const groupRef = useRef<THREE.Group>(null);
   // Reusable dummy object
   const dummy = useMemo(() => new THREE.Object3D(), []);

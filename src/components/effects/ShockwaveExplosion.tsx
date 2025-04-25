@@ -49,7 +49,7 @@ const parseConfig = (config: { [key: string]: PrimitiveOrArray }) => {
   };
 };
 
-interface ExplosionWithImpactProps {
+interface ShockwaveExplosionProps {
   config: { [key: string]: PrimitiveOrArray };
   onComplete?: () => void;
 }
@@ -72,7 +72,7 @@ function makeParticles(color: string, speed: number) {
 }
 
 // 충돌 지점에서 나타나는 "폭발/연기" 이펙트
-export const ExplosionWithImpact: React.FC<ExplosionWithImpactProps> = ({
+export const ShockwaveExplosion: React.FC<ShockwaveExplosionProps> = ({
   config,
   onComplete,
 }) => {

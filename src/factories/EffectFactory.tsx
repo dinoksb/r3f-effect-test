@@ -28,11 +28,14 @@ import {
   BulletEffectControllerProps,
   BulletEffectController,
 } from "../components/effects/BulletEffectController";
-import { Dust, DustProps } from "../components/effects/Dust";
 import {
-  Explosion,
+  EnvironmentalDust,
+  EnvironmentalDustProps,
+} from "../components/effects/EnvironmentalDust";
+import {
+  ExplosionDust,
   ExplosionEffectProps,
-} from "../components/effects/Explosion";
+} from "../components/effects/ExplosionDust";
 
 export type EffectProps =
   | FireBallEffectProps
@@ -42,7 +45,7 @@ export type EffectProps =
   | PoisonSwampEffectProps
   | AreaIndicatorEffectProps
   | BulletEffectControllerProps
-  | DustProps
+  | EnvironmentalDustProps
   | ExplosionEffectProps;
 
 export const MagicComponentMap = {
@@ -53,8 +56,8 @@ export const MagicComponentMap = {
   [EffectType.PoisonSwamp]: PoisonSwampEffectController,
   [EffectType.AreaIndicator]: AreaIndicatorEffectController,
   [EffectType.Bullet]: BulletEffectController,
-  [EffectType.Dust]: Dust,
-  [EffectType.Explosion]: Explosion,
+  [EffectType.Dust]: EnvironmentalDust,
+  [EffectType.Explosion]: ExplosionDust,
 } as const;
 
 export class EffectFactory {
@@ -75,9 +78,9 @@ export class EffectFactory {
       case EffectType.Bullet:
         return <BulletEffectController {...props} />;
       case EffectType.Dust:
-        return <Dust {...props} />;
+        return <EnvironmentalDust {...props} />;
       case EffectType.Explosion:
-        return <Explosion {...props} />;
+        return <ExplosionDust {...props} />;
     }
   }
 }

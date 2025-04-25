@@ -27,11 +27,11 @@ import { EffectType } from "../../types/effect";
 import { createFireBallEffectConfig } from "../effects/FireBallEffectController";
 import { createLightningEffectConfig } from "../effects/LightningEffectController";
 import { createMeteorEffectConfig } from "../effects/MeteorEffectController";
-import { createExplosionWithImpactConfig } from "../effects/ExplosionWithImpact";
+import { createExplosionWithImpactConfig } from "../effects/ShockwaveExplosion";
 import { createPoisonSwampEffectConfig } from "../effects/PoisonSwampEffectController";
 import { createBulletEffectConfig } from "../effects/BulletEffectController";
 import { createAreaIndicatorConfig } from "../effects/AreaIndicator";
-import { createDustConfig } from "../effects/Dust";
+import { createDustConfig } from "../effects/EnvironmentalDust";
 
 /**
  * Player input parameters for action determination

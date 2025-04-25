@@ -8,7 +8,11 @@ import React, {
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Trail } from "@react-three/drei";
-import { RigidBody, BallCollider } from "@react-three/rapier";
+import {
+  RigidBody,
+  BallCollider,
+  IntersectionEnterPayload,
+} from "@react-three/rapier";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 
@@ -19,8 +23,7 @@ export interface MeteorProps {
   radius: number;
   duration: number; // effect duration(ms)
   excludeCollisionGroup?: number[];
-  onHit?: (other: unknown, pos: THREE.Vector3) => void;
-  onImpact?: (pos: THREE.Vector3) => void;
+  onHit?: (other: IntersectionEnterPayload, pos: THREE.Vector3) => boolean;
   onComplete?: () => void;
   debug?: boolean;
 }

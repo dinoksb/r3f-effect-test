@@ -7,18 +7,21 @@ import {
   useActiveEffects,
 } from "../../src/components/store/effectStore";
 import { IntersectionEnterPayload } from "@react-three/rapier";
-import { createExplosionEffectConfig, Explosion } from "./effects/Explosion";
+import {
+  createExplosionEffectConfig,
+  ExplosionDust,
+} from "./effects/ExplosionDust";
 import { useGameServer, useRoomState } from "@agent8/gameserver";
 import { LightningEffectController } from "./effects/LightningEffectController";
 import { MeteorEffectController } from "./effects/MeteorEffectController";
 import {
   createExplosionWithImpactConfig,
-  ExplosionWithImpact,
-} from "./effects/ExplosionWithImpact";
+  ShockwaveExplosion,
+} from "./effects/ShockwaveExplosion";
 import { PoisonSwampEffectController } from "./effects/PoisonSwampEffectController";
 import { BulletEffectController } from "./effects/BulletEffectController";
 import { AreaIndicator } from "./effects/AreaIndicator";
-import { Dust } from "./effects/Dust";
+import { EnvironmentalDust } from "./effects/EnvironmentalDust";
 
 /**
  * Effect container component using Zustand store for effect management.
@@ -53,7 +56,7 @@ export function EffectContainer() {
 
       if (pos) {
         addEffect(
-          EffectType.EXPLOSION,
+          EffectType.EXPLOSION_DUST,
           undefined,
           createExplosionEffectConfig(pos, 0.5)
         );
@@ -67,7 +70,7 @@ export function EffectContainer() {
     (pos: Vector3) => {
       if (pos) {
         addEffect(
-          EffectType.EXPLOSION_WITH_IMPACT,
+          EffectType.SHOCKWAVE_EXPLOSION,
           undefined,
           createExplosionWithImpactConfig(pos)
         );
@@ -129,9 +132,9 @@ export function EffectContainer() {
               }}
             />
           );
-        case EffectType.EXPLOSION:
+        case EffectType.EXPLOSION_DUST:
           return (
-            <Explosion
+            <ExplosionDust
               key={effect.key}
               config={effect.effectData.config}
               onComplete={() => {
@@ -180,9 +183,9 @@ export function EffectContainer() {
               }}
             />
           );
-        case EffectType.EXPLOSION_WITH_IMPACT:
+        case EffectType.SHOCKWAVE_EXPLOSION:
           return (
-            <ExplosionWithImpact
+            <ShockwaveExplosion
               key={effect.key}
               config={effect.effectData.config}
             />
@@ -217,9 +220,9 @@ export function EffectContainer() {
               }}
             />
           );
-        case EffectType.DUST:
+        case EffectType.ENVIRONMENTAL_DUST:
           return (
-            <Dust
+            <EnvironmentalDust
               key={effect.key}
               config={effect.effectData.config}
               onComplete={() => handleEffectComplete(effect.key)}
