@@ -8,6 +8,7 @@ import {
 } from "@react-three/rapier";
 import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
+import { ActiveCollisionTypes } from "@dimforge/rapier3d-compat";
 
 const DEFAULT_MEMBERSHIP_COLLISION_GROUP = CollisionBitmask.Projectile;
 const DEFAULT_EXCLUDE_COLLISION_GROUP = CollisionBitmask.Player;
@@ -131,6 +132,7 @@ export const FireBall: React.FC<FireBallProps> = ({
       position={[startPosition.x, startPosition.y, startPosition.z]}
       colliders={false} // Shape defined by BallCollider below
       sensor={true} // Collision events only, no physical reaction
+      activeCollisionTypes={ActiveCollisionTypes.ALL}
       onIntersectionEnter={(other) => {
         console.log("onIntersectionEnter", other);
         // Called when FireBall intersects another RigidBody
