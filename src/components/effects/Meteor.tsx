@@ -9,13 +9,18 @@ import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Trail } from "@react-three/drei";
 import {
-  RigidBody,
+  useRapier,
   BallCollider,
-  IntersectionEnterPayload,
+  RigidBody,
+  RapierRigidBody,
 } from "@react-three/rapier";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
+import { Collider } from "@dimforge/rapier3d-compat";
 
+/**
+ * Meteor effect props
+ */
 export interface MeteorProps {
   startPosition: THREE.Vector3;
   targetPosition: THREE.Vector3;
@@ -23,19 +28,24 @@ export interface MeteorProps {
   radius: number;
   duration: number; // effect duration(ms)
   excludeCollisionGroup?: number[];
-  onHit?: (other: IntersectionEnterPayload, pos: THREE.Vector3) => boolean;
+  onHit?: (
+    position: THREE.Vector3,
+    rigidBody?: RapierRigidBody,
+    collider?: Collider
+  ) => boolean;
   onComplete?: () => void;
   debug?: boolean;
 }
 
+/**
+ * Custom hook to manage progress and activation based on duration and delay
+ */
 function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   const [progress, setProgress] = useState(0);
-  // If startDelay > 0, activate after that time has passed
   const [active, setActive] = useState(startDelay === 0);
-
-  // Set the actual start time delayed by the startDelay
   const startRef = useRef<number>(Date.now() + startDelay);
 
+  // Handle delayed activation
   useEffect(() => {
     if (startDelay > 0) {
       const timer = setTimeout(() => {
@@ -45,6 +55,7 @@ function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
     }
   }, [startDelay]);
 
+  // Update progress each frame
   useFrame(() => {
     if (!active) return;
     const elapsed = Date.now() - startRef.current;
@@ -58,6 +69,10 @@ function useProgress(duration: number, startDelay = 0, onDone?: () => void) {
   return { progress, active };
 }
 
+/**
+ * Meteor effect component
+ * Renders a meteor that travels from startPosition to targetPosition
+ */
 export const Meteor: React.FC<MeteorProps> = ({
   startPosition,
   targetPosition,
@@ -69,57 +84,154 @@ export const Meteor: React.FC<MeteorProps> = ({
   onComplete,
   debug = false,
 }) => {
+  // Component state
+  const [active, setActive] = useState(true);
+  const [showCollider, setShowCollider] = useState(false);
+
+  // Visual element refs
   const meteorRef = useRef<THREE.Mesh>(null);
   const emberRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
+  const colliderRef = useRef(null);
 
-  const [showImpact, setShowImpact] = useState(false);
+  // Store callbacks in refs to avoid closure issues
+  const onCompleteRef = useRef(onComplete);
 
-  // Progress increases from 0 to 1 during duration / active status
-  const { progress, active } = useProgress(duration, startDelay);
+  // Access Rapier physics world
+  const { rapier, world } = useRapier();
 
-  // Common radius/duration used for collision effects
-  const impactRadius = radius;
-  const impactDuration = 600;
+  // Update callback ref when prop changes
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
-  // Visual element sizes
-  const meteorSize = impactRadius * 0.9;
+  // Animation progress
+  const { progress, active: activeProgress } = useProgress(
+    duration,
+    startDelay
+  );
+
+  // Visual appearance constants
+  const meteorSize = radius * 0.9;
   const emberSize = meteorSize * 0.7;
   const trailWidth = radius * 2.0;
   const trailLength = radius * 0.6;
 
+  // Calculate movement vectors
   const direction = useMemo(() => {
-    return targetPosition.clone().sub(startPosition);
+    return targetPosition.clone().sub(startPosition).normalize();
   }, [startPosition, targetPosition]);
 
-  // Handle collision events
-  const handleOnHit = useCallback(
-    (other: unknown) => {
-      onHit?.(other, targetPosition);
+  const totalDistance = useMemo(() => {
+    return targetPosition.distanceTo(startPosition);
+  }, [startPosition, targetPosition]);
+
+  // Setup collision groups
+  const collisionGroups = useMemo(() => {
+    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
+      CollisionBitmask.AOE,
+      excludeCollisionGroup
+    );
+  }, [excludeCollisionGroup]);
+
+  /**
+   * Deactivate meteor visual effects
+   */
+  const removeMeteor = useCallback(() => {
+    if (active) {
+      setActive(false);
+    }
+  }, [active]);
+
+  /**
+   * Check if meteor has reached target position or hit something along the way
+   */
+  const checkReachedTargetPoint = useCallback(
+    (currentPosition: THREE.Vector3, frameTravelDistance: number) => {
+      // Create ray for collision detection
+      const ray = new rapier.Ray(currentPosition, direction);
+
+      // Cast ray to detect collisions
+      const hit = world.castRay(
+        ray,
+        frameTravelDistance,
+        true,
+        undefined,
+        collisionGroups
+      );
+
+      if (hit || currentPosition.distanceTo(targetPosition) < 0.3) {
+        setShowCollider(true);
+        removeMeteor();
+      }
+    },
+    [direction, removeMeteor, targetPosition, collisionGroups, world, rapier]
+  );
+
+  /**
+   * Handle collision when something enters the sphere collider area
+   */
+  const handleSphereCollision = useCallback(
+    (other) => {
+      if (!other || !other.colliderObject) return;
+
+      // Use target position as approximation for collision point
+      const collisionPosition = targetPosition.clone();
+
+      // Trigger onHit callback with collision data
+      if (onHit) {
+        onHit(collisionPosition, other.rigidBodyObject, other.colliderObject);
+      }
     },
     [onHit, targetPosition]
   );
 
-  useFrame(() => {
-    // Ignore if not started yet or impact already finished
+  /**
+   * Schedule cleanup for sphere collider and trigger onComplete
+   */
+  const cleanupCollider = useCallback(() => {
+    setTimeout(() => {
+      setShowCollider(false);
+      if (onCompleteRef.current) {
+        onCompleteRef.current();
+      }
+    }, 100); // Short delay to ensure collision is processed
+  }, []);
+
+  /**
+   * Main update loop for meteor animation and collision detection
+   */
+  useFrame((_, delta) => {
+    // Skip if not active
     if (!active) return;
 
-    // Interpolate position based on progress between 0 and 1
+    // Calculate distance to travel in this frame
+    const frameTravelDistance = (totalDistance * delta) / (duration / 1000);
+
+    // Update position based on progress
     const currentPosition = startPosition
       .clone()
-      .add(direction.clone().multiplyScalar(progress));
+      .add(direction.clone().multiplyScalar(totalDistance * progress));
 
-    // Meteor body rotation/random scale
+    // Check if reached target point or collision occurred
+    checkReachedTargetPoint(currentPosition, frameTravelDistance);
+
+    // Update visual appearance
     if (meteorRef.current) {
+      // Position
       meteorRef.current.position.copy(currentPosition);
+
+      // Rotation
       meteorRef.current.rotation.x += 0.01;
       meteorRef.current.rotation.y += 0.02;
       meteorRef.current.rotation.z += 0.015;
+
+      // Random scale for interesting effect
       const scale = THREE.MathUtils.randFloat(0.9, 1.1);
       meteorRef.current.scale.set(scale, scale, scale);
     }
 
-    // Ember (inner fireball) rotation/random scale
+    // Update ember (inner fireball)
     if (emberRef.current) {
       emberRef.current.position.copy(currentPosition);
       emberRef.current.rotation.y += 0.05;
@@ -127,26 +239,29 @@ export const Meteor: React.FC<MeteorProps> = ({
       emberRef.current.scale.set(emberScale, emberScale, emberScale);
     }
 
-    // Light position/brightness
+    // Update light
     if (lightRef.current) {
       lightRef.current.position.copy(currentPosition);
       lightRef.current.intensity = THREE.MathUtils.randFloat(3, 5);
     }
-
-    // Start impact effect when reaching near target
-    if (!showImpact && currentPosition.distanceTo(targetPosition) < 0.3) {
-      setShowImpact(true);
-      onComplete?.();
-    }
   });
 
-  if (!active) return null;
+  // Cleanup when collider appears
+  useEffect(() => {
+    if (showCollider) {
+      cleanupCollider();
+    }
+  }, [showCollider, cleanupCollider]);
+
+  // Don't render anything before the delay period
+  if (!activeProgress) return null;
 
   return (
     <>
-      {/* Meteor body & Ember & Trail (until impact) */}
-      {!showImpact && (
+      {/* Meteor visual elements - only show when active */}
+      {active && (
         <>
+          {/* Outer meteor body */}
           <mesh ref={meteorRef} position={startPosition.clone()}>
             <dodecahedronGeometry args={[meteorSize, 0]} />
             <meshBasicMaterial
@@ -158,6 +273,8 @@ export const Meteor: React.FC<MeteorProps> = ({
               blending={THREE.AdditiveBlending}
             />
           </mesh>
+
+          {/* Inner ember core */}
           <mesh ref={emberRef} position={startPosition.clone()}>
             <dodecahedronGeometry args={[emberSize, 0]} />
             <meshBasicMaterial
@@ -170,6 +287,7 @@ export const Meteor: React.FC<MeteorProps> = ({
             />
           </mesh>
 
+          {/* Light source */}
           <pointLight
             ref={lightRef}
             position={startPosition.clone()}
@@ -179,6 +297,7 @@ export const Meteor: React.FC<MeteorProps> = ({
             decay={2}
           />
 
+          {/* Trail effect */}
           <Trail
             width={trailWidth}
             length={trailLength}
@@ -189,77 +308,31 @@ export const Meteor: React.FC<MeteorProps> = ({
         </>
       )}
 
-      {/* When impact occurs (visual effects + explosion + Hitbox) */}
-      {showImpact && (
-        <Hitbox
-          position={targetPosition}
-          duration={impactDuration}
-          radius={impactRadius}
-          excludeCollisionGroup={excludeCollisionGroup}
-          onHit={handleOnHit}
-          debug={debug}
-        />
+      {/* Sphere collider for area collision detection */}
+      {showCollider && (
+        <RigidBody
+          ref={colliderRef}
+          type="fixed"
+          colliders={false}
+          position={[targetPosition.x, targetPosition.y, targetPosition.z]}
+          sensor
+          onIntersectionEnter={handleSphereCollision}
+          collisionGroups={collisionGroups}
+        >
+          <BallCollider args={[radius]} />
+          {debug && (
+            <mesh>
+              <sphereGeometry args={[radius, 16, 16]} />
+              <meshBasicMaterial
+                color="#ff8800"
+                transparent
+                opacity={0.3}
+                wireframe={true}
+              />
+            </mesh>
+          )}
+        </RigidBody>
       )}
     </>
-  );
-};
-
-interface HitboxProps {
-  position: THREE.Vector3;
-  duration: number;
-  radius: number;
-  excludeCollisionGroup?: number[];
-  onHit?: (other?: unknown) => void;
-  debug?: boolean;
-}
-const Hitbox: React.FC<HitboxProps> = ({
-  position,
-  duration,
-  excludeCollisionGroup,
-  onHit,
-  debug = false,
-  radius,
-}) => {
-  const rigidRef = useRef(null);
-  const [destroyed, setDestroyed] = useState(false);
-
-  useProgress(duration, 0, () => setDestroyed(true));
-
-  const createCollisionGroups = useMemo(() => {
-    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionBitmask.AOE,
-      excludeCollisionGroup
-    );
-  }, []);
-
-  if (destroyed) return null;
-
-  return (
-    <RigidBody
-      ref={rigidRef}
-      type="fixed"
-      colliders={false}
-      sensor={true}
-      position={[position.x, position.y, position.z]}
-      onIntersectionEnter={(other) => {
-        onHit?.(other);
-      }}
-      collisionGroups={createCollisionGroups}
-    >
-      <BallCollider args={[radius]} />
-      {/* Debug 시각화 */}
-      {/* Debug visualization */}
-      {debug && (
-        <mesh>
-          <sphereGeometry args={[radius, 16, 16]} />
-          <meshBasicMaterial
-            color="#ff00ff"
-            transparent
-            opacity={0.3}
-            wireframe={true}
-          />
-        </mesh>
-      )}
-    </RigidBody>
   );
 };

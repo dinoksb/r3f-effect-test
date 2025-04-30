@@ -1,86 +1,139 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
+import { useRapier } from "@react-three/rapier";
 import {
+  Collider,
+  InteractionGroups,
   RigidBody,
-  BallCollider,
-  IntersectionEnterPayload,
-} from "@react-three/rapier";
-import { CollisionBitmask } from "../../constants/collisionGroups";
-import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
-import { ActiveCollisionTypes } from "@dimforge/rapier3d-compat";
-
-const DEFAULT_MEMBERSHIP_COLLISION_GROUP = CollisionBitmask.Projectile;
-const DEFAULT_EXCLUDE_COLLISION_GROUP = CollisionBitmask.Player;
+} from "@dimforge/rapier3d-compat";
 
 interface FireBallProps {
   startPosition: THREE.Vector3;
   direction: THREE.Vector3; // Normalized direction vector
   speed: number; // Distance traveled per second
   duration: number; // Lifespan (milliseconds)
-  onHit?: (other: IntersectionEnterPayload, pos?: THREE.Vector3) => boolean; // Callback on collision
+  color?: THREE.ColorRepresentation;
+  scale?: number;
+  collisionGroups?: InteractionGroups;
+  owner?: unknown; // Use a more type-safe unknown instead of any
+  onHit?: (
+    pos?: THREE.Vector3,
+    rigidBody?: RigidBody,
+    collider?: Collider
+  ) => void; // Callback on collision
   onComplete?: () => void;
 }
-
-const createCollisionGroups = () => {
-  return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-    DEFAULT_MEMBERSHIP_COLLISION_GROUP,
-    DEFAULT_EXCLUDE_COLLISION_GROUP
-  );
-};
 
 export const FireBall: React.FC<FireBallProps> = ({
   startPosition,
   direction,
   speed,
   duration,
+  color = "#ff3300",
+  scale = 1,
+  collisionGroups,
+  owner,
   onHit,
   onComplete,
 }) => {
-  const [destroyed, setDestroyed] = useState(false);
-  const [trailReady, setTrailReady] = useState(false);
+  const [active, setActive] = useState(true);
 
-  const [trailKey, setTrailKey] = useState(0);
   // FireBall's "creation time"
   const startTime = useRef(Date.now());
+  const onCompleteRef = useRef(onComplete);
 
-  // RigidBody reference (Rapier object)
-  const rigidRef = useRef(null);
+  // Group reference for positioning
+  const groupRef = useRef<THREE.Group>(null);
 
   // Refs pointing to the inner Mesh & Light
   const outerRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.Mesh>(null);
   const lightRef = useRef<THREE.PointLight>(null);
 
-  // Show Trail after skipping the first few frames
-  const frameCountRef = useRef(0);
+  // Access Rapier physics world
+  const { rapier, world } = useRapier();
 
-  // Update kinematic RigidBody position and effect every frame
-  useFrame(() => {
-    if (destroyed) return;
+  // Normalize direction vector
+  const normalizedDirection = direction.clone().normalize();
 
-    frameCountRef.current++;
-    // Example: Show Trail after 2-3 frames (or n frames)
-    if (!trailReady && frameCountRef.current > 5) {
-      setTrailReady(true);
-      setTrailKey(trailKey + 1);
+  // FireBall removal function
+  const removeBall = useCallback(() => {
+    if (active) {
+      setActive(false);
+      if (onCompleteRef.current) onCompleteRef.current();
     }
+  }, [active]);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    // Reset the timer when the component mounts
+    startTime.current = Date.now();
+    setActive(true);
+  }, []);
+
+  // Update position and effects every frame
+  useFrame((_, delta) => {
+    if (!active) return;
 
     const elapsed = Date.now() - startTime.current;
-    const seconds = elapsed / 1000;
+    // Destroy when lifetime ends
+    if (elapsed > duration) {
+      removeBall();
+      return;
+    }
 
-    // // New position = initial position + direction * speed * elapsed time
-    const currentPos = startPosition
-      .clone()
-      .add(direction.clone().multiplyScalar(speed * seconds));
+    const group = groupRef.current;
+    if (!group) return;
 
-    // // Update Rapier Kinematic Body movement
-    // Pass in the form of setNextKinematicTranslation({ x, y, z })
-    rigidRef.current?.setNextKinematicTranslation({
-      x: currentPos.x,
-      y: currentPos.y,
-      z: currentPos.z,
-    });
+    // Calculate distance to travel in this frame
+    const frameTravelDistance = speed * delta;
+    // Use current position as the origin for the ray
+    const origin = group.position;
+
+    console.log("owner: ", owner);
+
+    // Use Rapier's ray casting for collision detection
+    const ray = new rapier.Ray(origin, normalizedDirection);
+
+    const hit = (world as any).castRay(
+      ray,
+      frameTravelDistance,
+      true,
+      undefined,
+      collisionGroups,
+      undefined,
+      owner
+    );
+
+    if (hit) {
+      // Calculate hit point
+      const hitPoint = ray.pointAt(hit.timeOfImpact);
+      const hitPointVec3 = new THREE.Vector3(
+        hitPoint.x,
+        hitPoint.y,
+        hitPoint.z
+      );
+      const hitCollider = hit.collider;
+      const hitRigidBody = hitCollider.parent();
+
+      // Move group to exact hit point
+      group.position.copy(hitPointVec3);
+
+      // Call onHit callback with collision data
+      onHit?.(hitPointVec3, hitRigidBody, hitCollider);
+      removeBall();
+      return;
+    } else {
+      // No hit, advance the fireball's position
+      const nextPosition = origin
+        .clone()
+        .addScaledVector(normalizedDirection, frameTravelDistance);
+      group.position.copy(nextPosition);
+    }
 
     // Calculate fade out
     const fadeStart = duration - 400;
@@ -113,51 +166,22 @@ export const FireBall: React.FC<FireBallProps> = ({
       lightRef.current.intensity =
         (5 + Math.sin(elapsed * 0.03) * 2 + Math.random()) * opacityFactor;
     }
-
-    // Destroy at the end of lifespan
-    if (elapsed > duration) {
-      setDestroyed(true);
-      onComplete?.();
-    }
   });
 
   // Don't render if destroyed
-  if (destroyed) return null;
+  if (!active) return null;
 
   return (
-    <RigidBody
-      ref={rigidRef}
-      // Set Sensor collision mode
-      type="kinematicPosition"
+    <group
+      ref={groupRef}
+      scale={scale}
       position={[startPosition.x, startPosition.y, startPosition.z]}
-      colliders={false} // Shape defined by BallCollider below
-      sensor={true} // Collision events only, no physical reaction
-      activeCollisionTypes={ActiveCollisionTypes.ALL}
-      onIntersectionEnter={(other) => {
-        console.log("onIntersectionEnter", other);
-        // Called when FireBall intersects another RigidBody
-        const translation = rigidRef.current?.translation();
-        const hitPosition = translation
-          ? new THREE.Vector3(translation.x, translation.y, translation.z)
-          : undefined;
-        if (onHit?.(other, hitPosition)) {
-          onComplete?.();
-          setDestroyed(true);
-        }
-      }}
-      // Set initial position
-      // Not affected by gravity, etc.
-      collisionGroups={createCollisionGroups()}
-      gravityScale={0}
     >
-      {/* FireBall collider (radius=0.4) */}
-      <BallCollider args={[0.4]} />
-
       {/* Flame outer shell */}
       <mesh ref={outerRef}>
         <sphereGeometry args={[0.4, 16, 16]} />
         <meshBasicMaterial
-          color="#ff3300"
+          color={color}
           transparent
           opacity={0.8}
           side={THREE.DoubleSide}
@@ -187,6 +211,6 @@ export const FireBall: React.FC<FireBallProps> = ({
         distance={8}
         decay={2}
       />
-    </RigidBody>
+    </group>
   );
 };

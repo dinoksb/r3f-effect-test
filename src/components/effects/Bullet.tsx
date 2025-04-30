@@ -7,37 +7,55 @@ import React, {
   useCallback,
 } from "react";
 import { useFrame } from "@react-three/fiber";
-import { CollisionBitmask } from "../../constants/collisionGroups";
-import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
-import { RigidBody, CuboidCollider } from "@react-three/rapier";
+import { useRapier } from "@react-three/rapier";
+import {
+  Collider,
+  InteractionGroups,
+  RigidBody,
+} from "@dimforge/rapier3d-compat";
 
 const DEFAULT_SIZE = new THREE.Vector3(0.5, 0.5, 1);
-const DEFAULT_MEMBERSHIP_COLLISION_GROUP = CollisionBitmask.Projectile;
-const DEFAULT_EXCLUDE_COLLISION_GROUP = CollisionBitmask.Player;
 
 export interface BulletProps {
   startPosition: THREE.Vector3;
   direction: THREE.Vector3;
+  color?: THREE.ColorRepresentation | undefined;
+  scale?: number;
   speed: number;
   duration: number;
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  collisionGroups?: InteractionGroups;
+  owner?: RigidBody;
+  onHit?: (
+    pos?: THREE.Vector3,
+    rigidBody?: RigidBody,
+    collider?: Collider
+  ) => void;
   onComplete?: () => void;
 }
 
 export const Bullet: React.FC<BulletProps> = ({
   startPosition,
   direction,
+  color = "orange",
+  scale = 1,
   speed,
   duration,
+  collisionGroups,
+  owner,
   onHit,
   onComplete,
 }) => {
   const [active, setActive] = useState(true);
-  const rigidRef = useRef(null);
+  const groupRef = useRef<THREE.Group>(null);
   const timeRef = useRef(0);
+  const { rapier, world } = useRapier();
   const normalizedDirection = direction.clone().normalize();
   const bulletGeometry = new THREE.BoxGeometry(0.1, 0.1, 0.3);
-  const bulletMaterial = new THREE.MeshBasicMaterial({ color: "orange" });
+  const bulletMaterial = new THREE.MeshStandardMaterial({
+    color: color,
+    emissive: color,
+    emissiveIntensity: 2,
+  });
   const onCompleteRef = useRef(onComplete);
   const startTime = useRef(Date.now());
 
@@ -49,13 +67,6 @@ export const Bullet: React.FC<BulletProps> = ({
     }
   }, [active]);
 
-  const createCollisionGroups = useMemo(() => {
-    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      DEFAULT_MEMBERSHIP_COLLISION_GROUP,
-      DEFAULT_EXCLUDE_COLLISION_GROUP
-    );
-  }, []);
-
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
@@ -65,38 +76,61 @@ export const Bullet: React.FC<BulletProps> = ({
     timeRef.current = 0;
     startTime.current = Date.now();
     setActive(true);
+  });
 
-    // Automatically remove bullet after the specified duration
-    const timer = setTimeout(() => {
-      removeBullet();
-    }, duration);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [duration, removeBullet]);
-
-  useFrame(() => {
-    if (!active || !rigidRef.current) return;
+  useFrame((_, delta) => {
+    if (!active) return;
 
     const elapsed = Date.now() - startTime.current;
-    const seconds = elapsed / 1000;
-
-    // New position = initial position + direction * speed * elapsed time
-    const currentPos = startPosition
-      .clone()
-      .add(normalizedDirection.clone().multiplyScalar(speed * seconds));
-
-    // Update Rapier Kinematic Body movement
-    rigidRef.current?.setNextKinematicTranslation({
-      x: currentPos.x,
-      y: currentPos.y,
-      z: currentPos.z,
-    });
-
-    // Destroy when lifetime ends (backup check)
+    // // Destroy when lifetime ends (backup check)
     if (elapsed > duration) {
       removeBullet();
+      return;
+    }
+
+    const group = groupRef.current;
+    if (!group) return;
+
+    // Calculate distance to travel in this frame
+    const frameTravelDistance = speed * delta;
+    // Use current mesh position as the origin for the ray
+    const origin = group.position;
+
+    const ray = new rapier.Ray(origin, normalizedDirection);
+
+    const hit = world.castRay(
+      ray,
+      frameTravelDistance,
+      true,
+      undefined,
+      collisionGroups,
+      undefined,
+      owner
+    );
+
+    if (hit) {
+      // Calculate hit point
+      const hitPoint = ray.pointAt(hit.timeOfImpact);
+      const hitPointVec3 = new THREE.Vector3(
+        hitPoint.x,
+        hitPoint.y,
+        hitPoint.z
+      );
+      const hitCollider = hit.collider;
+      const hitRigidBody = hitCollider.parent();
+
+      // Move group to exact hit point
+      group.position.copy(hitPointVec3);
+
+      onHit?.(hitPointVec3, hitRigidBody, hitCollider);
+      onComplete?.();
+      return;
+    } else {
+      // No hit, advance the bullet's position
+      const nextPosition = origin
+        .clone()
+        .addScaledVector(normalizedDirection, frameTravelDistance);
+      group.position.copy(nextPosition);
     }
   });
 
@@ -115,53 +149,21 @@ export const Bullet: React.FC<BulletProps> = ({
     return new THREE.Euler().setFromQuaternion(bulletQuaternion);
   }, [bulletQuaternion]);
 
-  // Calculate actual bullet size (base geometry × scale)
-  const actualBulletSize = useMemo(() => {
-    return {
-      x: bulletGeometry.parameters.width * DEFAULT_SIZE.x,
-      y: bulletGeometry.parameters.height * DEFAULT_SIZE.y,
-      z: bulletGeometry.parameters.depth * DEFAULT_SIZE.z,
-    };
-  }, [bulletGeometry.parameters]);
-
   // Don't render if the bullet has been removed
   if (!active) return null;
 
   return (
-    <RigidBody
-      ref={rigidRef}
-      type="kinematicPosition"
+    <group
+      ref={groupRef}
+      scale={scale}
       position={[startPosition.x, startPosition.y, startPosition.z]}
-      colliders={false}
-      sensor={true}
       rotation={bulletRotation}
-      onIntersectionEnter={(payload) => {
-        const translation = rigidRef.current?.translation();
-        const hitPosition = translation
-          ? new THREE.Vector3(translation.x, translation.y, translation.z)
-          : undefined;
-        // Collision event triggered
-        if (onHit) onHit(payload, hitPosition);
-        // Remove bullet
-        removeBullet();
-      }}
-      gravityScale={0}
-      collisionGroups={createCollisionGroups}
     >
-      {/* CuboidCollider for bullet collision - considers both base geometry size and scale */}
-      <CuboidCollider
-        args={[
-          actualBulletSize.x / 2,
-          actualBulletSize.y / 2,
-          actualBulletSize.z / 2,
-        ]}
-      />
-
       <mesh
         geometry={bulletGeometry}
         material={bulletMaterial}
         scale={DEFAULT_SIZE}
       />
-    </RigidBody>
+    </group>
   );
 };

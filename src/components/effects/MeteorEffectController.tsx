@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
-import { IntersectionEnterPayload, useRapier } from "@react-three/rapier";
-import { Ray } from "@dimforge/rapier3d-compat";
+import { useRapier } from "@react-three/rapier";
+import { Collider, Ray, RigidBody } from "@dimforge/rapier3d-compat";
 import { Meteor } from "./Meteor";
 import { AreaIndicator } from "./AreaIndicator";
 
@@ -17,7 +17,11 @@ const DEFAULT_RAY_ORIGIN_Y_OFFSET = 15;
 // Meteor Magic Props
 export interface MeteorEffectControllerProps {
   config: { [key: string]: PrimitiveOrArray };
-  onHit?: (other: IntersectionEnterPayload, pos: THREE.Vector3) => void;
+  onHit?: (
+    position: THREE.Vector3,
+    rigidBody?: RigidBody,
+    collider?: Collider
+  ) => boolean;
   onImpact?: (pos: THREE.Vector3) => void;
   onComplete?: () => void;
 }
@@ -48,7 +52,7 @@ export const createMeteorEffectConfig = (
   };
 };
 
-const parseConfig = (config: { [key: string]: any }) => {
+const parseConfig = (config: { [key: string]: PrimitiveOrArray }) => {
   return {
     targetPosition: arrayToVec(
       config.targetPosition as [number, number, number]
@@ -146,10 +150,27 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
     initializedRef.current = true;
   }, [count, targetPosition, world]);
 
+  // Handle meteor hit event wrapper
+  const handleHit = (
+    position: THREE.Vector3,
+    rigidBody?: RigidBody,
+    collider?: Collider
+  ) => {
+    if (onHit) {
+      return onHit(position, rigidBody, collider);
+    }
+    return true;
+  };
+
   const onHandleMeteorsComplete = () => {
+    const currentIndex = meteorCompleteCount;
     setMeteorCompleteCount((prev) => prev + 1);
-    onImpact?.(targetPositions[meteorCompleteCount]);
-    if (meteorCompleteCount === targetPositions.length) {
+
+    if (targetPositions[currentIndex]) {
+      onImpact?.(targetPositions[currentIndex]);
+    }
+
+    if (currentIndex === targetPositions.length - 1) {
       onComplete?.();
     }
   };
@@ -159,15 +180,13 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
   return (
     <>
       {targetPositions.map((targetPos, index) => (
-        <>
+        <React.Fragment key={`meteor-${index}`}>
           <Meteor
-            key={index}
             startPosition={calculatedStartPosition}
             targetPosition={targetPos}
             radius={radius}
             duration={DEFAULT_DURATION}
-            onHit={onHit}
-            onImpact={onImpact}
+            onHit={handleHit}
             onComplete={onHandleMeteorsComplete}
             startDelay={100 * index + Math.random() * 100}
           />
@@ -178,9 +197,9 @@ export const MeteorEffectController: React.FC<MeteorEffectControllerProps> = ({
               radius: radius,
               duration: DEFAULT_DURATION,
             }}
-            onComplete={onHandleMeteorsComplete}
+            onComplete={() => {}}
           />
-        </>
+        </React.Fragment>
       ))}
     </>
   );

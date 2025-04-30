@@ -32,6 +32,7 @@ import { createPoisonSwampEffectConfig } from "../effects/PoisonSwampEffectContr
 import { createBulletEffectConfig } from "../effects/BulletEffectController";
 import { createAreaIndicatorConfig } from "../effects/AreaIndicator";
 import { createDustConfig } from "../effects/EnvironmentalDust";
+import { usePlayerStore } from "../store/playerStore";
 
 /**
  * Player input parameters for action determination
@@ -270,6 +271,8 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
     const [selectedMagic, setSelectedMagic] = useState<EffectType>(
       EffectType.FIREBALL
     );
+    const { account } = useMemo(() => ({ account: "player" }), []);
+    const { registerPlayerRef, unregisterPlayerRef } = usePlayerStore();
 
     useImperativeHandle(
       ref,
@@ -285,6 +288,23 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
     );
 
     useEffect(() => {
+      if (!controllerRef.current?.rigidBodyRef.current) return;
+
+      const rigidBody = controllerRef.current.rigidBodyRef.current;
+      if (rigidBody.userData) {
+        rigidBody.userData["account"] = account;
+      } else {
+        rigidBody.userData = { account };
+      }
+
+      registerPlayerRef(account, controllerRef.current.rigidBodyRef);
+
+      return () => {
+        unregisterPlayerRef(account);
+      };
+    }, [account, controllerRef, registerPlayerRef, unregisterPlayerRef]);
+
+    useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === "1") setSelectedMagic(EffectType.FIREBALL);
         if (e.key === "2") setSelectedMagic(EffectType.LASER);
@@ -293,8 +313,8 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
         if (e.key === "5") setSelectedMagic(EffectType.POISON_SWAMP);
         if (e.key === "6") setSelectedMagic(EffectType.AREA_INDICATOR);
         if (e.key === "7") setSelectedMagic(EffectType.BULLET);
-        if (e.key === "8") setSelectedMagic(EffectType.DUST);
-        if (e.key === "9") setSelectedMagic(EffectType.EXPLOSION_WITH_IMPACT);
+        if (e.key === "8") setSelectedMagic(EffectType.EXPLOSION_DUST);
+        if (e.key === "9") setSelectedMagic(EffectType.SHOCKWAVE_EXPLOSION);
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
@@ -353,14 +373,15 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
           case EffectType.FIREBALL:
             spawnEffect(
               EffectType.FIREBALL,
-              createFireBallEffectConfig(startPosition, direction)
+              createFireBallEffectConfig({
+                startPosition,
+                direction,
+              })
             );
             break;
           case EffectType.LIGHTNING: {
             const playerPos = startPosition.clone();
-            const targetPos = playerPos
-              .clone()
-              .add(direction.clone().multiplyScalar(5));
+            const targetPos = playerPos.clone().add(direction.clone());
             spawnEffect(
               EffectType.LIGHTNING,
               createLightningEffectConfig(targetPos)
@@ -373,9 +394,9 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
               createMeteorEffectConfig(startPosition)
             );
             break;
-          case EffectType.EXPLOSION_WITH_IMPACT:
+          case EffectType.SHOCKWAVE_EXPLOSION:
             spawnEffect(
-              EffectType.EXPLOSION_WITH_IMPACT,
+              EffectType.SHOCKWAVE_EXPLOSION,
               createExplosionWithImpactConfig(startPosition)
             );
             break;
@@ -397,7 +418,15 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
           case EffectType.BULLET:
             spawnEffect(
               EffectType.BULLET,
-              createBulletEffectConfig(startPosition, direction)
+              createBulletEffectConfig({
+                startPosition,
+                direction,
+                speed: 100,
+                duration: 500,
+                scale: 3,
+                flashDuration: 30,
+                color: "black",
+              })
             );
             break;
           case EffectType.AREA_INDICATOR:
@@ -406,8 +435,11 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
               createAreaIndicatorConfig(startPosition)
             );
             break;
-          case EffectType.DUST:
-            spawnEffect(EffectType.DUST, createDustConfig(startPosition));
+          case EffectType.EXPLOSION_DUST:
+            spawnEffect(
+              EffectType.EXPLOSION_DUST,
+              createDustConfig(startPosition)
+            );
             break;
         }
       } else {

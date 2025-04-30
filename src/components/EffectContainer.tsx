@@ -6,7 +6,6 @@ import {
   useEffectStore,
   useActiveEffects,
 } from "../../src/components/store/effectStore";
-import { IntersectionEnterPayload } from "@react-three/rapier";
 import {
   createExplosionEffectConfig,
   ExplosionDust,
@@ -22,6 +21,8 @@ import { PoisonSwampEffectController } from "./effects/PoisonSwampEffectControll
 import { BulletEffectController } from "./effects/BulletEffectController";
 import { AreaIndicator } from "./effects/AreaIndicator";
 import { EnvironmentalDust } from "./effects/EnvironmentalDust";
+import { Collider, RigidBody } from "@dimforge/rapier3d-compat";
+import { usePlayerStore } from "./store/playerStore";
 
 /**
  * Effect container component using Zustand store for effect management.
@@ -30,6 +31,7 @@ export function EffectContainer() {
   const { server, account } = useGameServer();
   //   if (!connected) return null;
   const { roomId } = useRoomState();
+  const getPlayerRef = usePlayerStore((state) => state.getPlayerRef);
 
   // Get state and actions from the Zustand store
   const activeEffects = useActiveEffects();
@@ -45,25 +47,41 @@ export function EffectContainer() {
     [removeEffect]
   );
 
-  // Handler for when an effect hits something (logic might be needed here)
-  const handleFireBallEffectHit = useCallback(
-    (other: IntersectionEnterPayload, pos?: Vector3, sender?: string) => {
-      console.log("handleFireBallEffectHit", other, pos, sender);
-
-      if (sender) {
-        if (other.rigidBody?.userData?.["account"] === sender) return false;
+  const handleEffecttHit = useCallback(
+    (
+      type: EffectType,
+      pos?: Vector3,
+      rigidBody?: RigidBody,
+      collider?: Collider,
+      sender?: string
+    ): boolean => {
+      const targetAccount = rigidBody?.userData?.["account"];
+      if (sender && targetAccount) {
+        if (targetAccount === sender) return false;
       }
 
-      if (pos) {
-        addEffect(
-          EffectType.EXPLOSION_DUST,
-          undefined,
-          createExplosionEffectConfig(pos, 0.5)
-        );
+      if (!pos) return;
+
+      switch (type) {
+        case EffectType.BULLET:
+        case EffectType.FIREBALL:
+          addEffect(
+            EffectType.EXPLOSION_DUST,
+            undefined,
+            createExplosionEffectConfig(pos, 0.5)
+          );
+          break;
+        case EffectType.METEOR:
+          console.log("Meteor hit: ", pos, rigidBody, collider, sender);
+          break;
+        case EffectType.LIGHTNING:
+          console.log("Lightning hit: ", pos, rigidBody, collider, sender);
+          break;
       }
+
       return true;
     },
-    []
+    [addEffect]
   );
 
   const handleMeteorEffectImpact = useCallback(
@@ -77,13 +95,6 @@ export function EffectContainer() {
       }
     },
     [addEffect]
-  );
-
-  const handleLightningEffectHit = useCallback(
-    (effectKey: number) => {
-      handleEffectComplete(effectKey);
-    },
-    [handleEffectComplete]
   );
 
   // Subscribe to effect events from other players
@@ -120,9 +131,10 @@ export function EffectContainer() {
             <FireBallEffectController
               key={effect.key}
               config={effect.effectData.config}
-              onHit={(other, pos) => {
-                return handleFireBallEffectHit(other, pos, effect.sender);
-              }}
+              owner={getPlayerRef("player")?.current}
+              onHit={(pos, rigidBody, collider) =>
+                handleEffecttHit(type, pos, rigidBody, collider, effect.sender)
+              }
               onComplete={() => {
                 handleEffectComplete(effect.key);
                 console.log(
@@ -151,8 +163,14 @@ export function EffectContainer() {
             <LightningEffectController
               key={effect.key}
               config={effect.effectData.config}
-              onHit={() => {
-                return handleLightningEffectHit(effect.key);
+              onHit={(pos, rigidBody, collider) => {
+                return handleEffecttHit(
+                  type,
+                  pos,
+                  rigidBody,
+                  collider,
+                  effect.sender
+                );
               }}
               onComplete={() => {
                 handleEffectComplete(effect.key);
@@ -168,8 +186,14 @@ export function EffectContainer() {
             <MeteorEffectController
               key={effect.key}
               config={effect.effectData.config}
-              onHit={(other, pos) => {
-                console.log("Meteor hit", other, pos);
+              onHit={(pos, rigidBody, collider) => {
+                return handleEffecttHit(
+                  type,
+                  pos,
+                  rigidBody,
+                  collider,
+                  effect.sender
+                );
               }}
               onImpact={(pos) => {
                 return handleMeteorEffectImpact(pos);
@@ -205,6 +229,10 @@ export function EffectContainer() {
             <BulletEffectController
               key={effect.key}
               config={effect.effectData.config}
+              owner={getPlayerRef(effect.sender)?.current}
+              onHit={(pos, rigidBody, collider) =>
+                handleEffecttHit(type, pos, rigidBody, collider, effect.sender)
+              }
               onComplete={() => {
                 handleEffectComplete(effect.key);
               }}
@@ -234,7 +262,7 @@ export function EffectContainer() {
           return null;
       }
     },
-    [handleFireBallEffectHit, handleEffectComplete]
+    [handleEffectComplete, handleEffecttHit, handleMeteorEffectImpact]
   );
 
   // Render all active effects from the store

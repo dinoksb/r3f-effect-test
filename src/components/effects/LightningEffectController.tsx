@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import * as THREE from "three";
 import { LightningStrike } from "./LightningStrike";
-import { useRapier } from "@react-three/rapier";
-import { Ray } from "@dimforge/rapier3d-compat";
+import { useRapier, RapierRigidBody } from "@react-three/rapier";
+import { Collider, Ray } from "@dimforge/rapier3d-compat";
 
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 type PrimitiveOrArray = Primitive | Primitive[];
@@ -14,7 +14,11 @@ const DEFAULT_RAY_ORIGIN_Y_OFFSET = 15;
 
 export interface LightningEffectControllerProps {
   config: { [key: string]: PrimitiveOrArray };
-  onHit?: (other?: unknown, pos?: THREE.Vector3) => void;
+  onHit?: (
+    position: THREE.Vector3,
+    rigidBody?: RapierRigidBody,
+    collider?: Collider
+  ) => void;
   onComplete?: () => void;
 }
 
@@ -46,7 +50,7 @@ export const createLightningEffectConfig = (
   };
 };
 
-const parseConfig = (config: { [key: string]: any }) => ({
+const parseConfig = (config: { [key: string]: PrimitiveOrArray }) => ({
   targetPosition: arrayToVec(config.targetPosition as [number, number, number]),
   duration: (config.duration as number) || DEFAULT_DURATION,
   strikeCount: (config.strikeCount as number) || DEFAULT_STRIKE_COUNT,
@@ -136,9 +140,26 @@ export const LightningEffectController: React.FC<
     };
   }, [parsedConfig, onComplete]);
 
-  const handleHit = (other: unknown, pos: THREE.Vector3) => {
-    onHit?.(other, pos);
+  // Handler for ray-based collision hits
+  const handleHit = (
+    position: THREE.Vector3,
+    rigidBody?: RapierRigidBody,
+    collider?: Collider
+  ) => {
+    if (onHit) {
+      onHit(position, rigidBody, collider);
+    }
+
+    // 즉시 종료하지 않고, SphereCollider의 onComplete 콜백이 duration 후에 호출되도록 함
+    // 타이머는 SphereCollider에서 관리되므로 여기서는 제거하지 않음
+    /*
+    // Complete the effect when a hit is detected
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
     onComplete?.();
+    */
   };
 
   if (isCalculating || actualTargets.length === 0 || !commonStartPosition) {
