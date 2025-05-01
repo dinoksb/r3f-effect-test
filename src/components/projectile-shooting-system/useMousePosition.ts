@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useMemo } from "react";
 import { Vector3, Raycaster, Vector2 } from "three";
 import { useThree } from "@react-three/fiber";
 import { useRapier } from "@react-three/rapier";
@@ -21,9 +21,11 @@ export function useMousePosition() {
   // 마우스 포인터 위치 추적
   const pointerPositionRef = useRef(new Vector2(0, 0));
 
+  // 자주 사용하는 값 메모이제이션
+  const maxDistance = useMemo(() => 100, []);
+
   /**
    * 마우스 클릭 위치를 3D 공간 상의 좌표로 변환
-   * @param defaultY 교차점을 찾지 못한 경우 사용할 기본 높이
    * @param collisionGroups 충돌 그룹
    * @returns 클릭한 3D 위치, 교차점이 없으면 null
    */
@@ -42,7 +44,6 @@ export function useMousePosition() {
       const rayOrigin = new Vector3();
       camera.getWorldPosition(rayOrigin);
 
-      // 수정: 올바르게 방향 벡터 복사
       const rayDirection = new Vector3();
       rayDirection.copy(raycaster.current.ray.direction).normalize();
 
@@ -60,9 +61,6 @@ export function useMousePosition() {
             y: rayDirection.y,
             z: rayDirection.z,
           };
-
-          // 최대 거리 설정
-          const maxDistance = 100;
 
           // 물리 레이캐스트 쿼리 실행
           const ray = new rapier.Ray(raycastOrigin, raycastDir);
@@ -96,14 +94,16 @@ export function useMousePosition() {
           // 에러 발생 시 폴백
         }
       }
+
+      // 교차점을 찾지 못하면 null 반환
+      return null;
     },
-    [camera, size, rapier, world]
+    [camera, size, rapier, world, maxDistance]
   );
 
   /**
    * 마우스 이벤트 처리를 위한 이벤트 핸들러를 등록하고 클릭 위치를 반환하는 함수
    * @param mouseButton 감지할 마우스 버튼 (0: 좌클릭, 1: 휠, 2: 우클릭)
-   * @param defaultY 교차점을 찾지 못한 경우 사용할 기본 높이
    * @param collisionGroups 충돌 그룹
    */
   const useMouseClick = useCallback(
