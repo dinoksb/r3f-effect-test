@@ -11,6 +11,7 @@ import {
 } from "@react-three/rapier";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { CollisionBitmask } from "../../constants/collisionGroups";
+import RAPIER from "@dimforge/rapier3d-compat";
 
 // PoisonSwamp Magic Props
 export interface PoisonSwampEffectProps {
@@ -300,6 +301,7 @@ export const PoisonSwamp: React.FC<PoisonSwampEffectProps> = ({
         type="fixed"
         colliders={false}
         sensor
+        activeCollisionTypes={RAPIER.ActiveCollisionTypes.ALL}
         onIntersectionEnter={handleCollisionEnter}
         onIntersectionExit={handleCollisionExit}
         collisionGroups={createCollisionGroups}
