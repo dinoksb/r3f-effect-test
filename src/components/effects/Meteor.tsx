@@ -13,10 +13,9 @@ import {
   BallCollider,
   RigidBody,
   RapierRigidBody,
+  IntersectionEnterPayload,
 } from "@react-three/rapier";
-import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
-import { CollisionBitmask } from "../../constants/collisionGroups";
-import { Collider } from "@dimforge/rapier3d-compat";
+import { Collider, InteractionGroups } from "@dimforge/rapier3d-compat";
 
 /**
  * Meteor effect props
@@ -27,7 +26,7 @@ export interface MeteorProps {
   startDelay: number;
   radius: number;
   duration: number; // effect duration(ms)
-  excludeCollisionGroup?: number[];
+  collisionGroups?: InteractionGroups;
   onHit?: (
     position: THREE.Vector3,
     rigidBody?: RapierRigidBody,
@@ -79,7 +78,7 @@ export const Meteor: React.FC<MeteorProps> = ({
   radius,
   duration,
   startDelay,
-  excludeCollisionGroup,
+  collisionGroups,
   onHit,
   onComplete,
   debug = false,
@@ -126,14 +125,6 @@ export const Meteor: React.FC<MeteorProps> = ({
     return targetPosition.distanceTo(startPosition);
   }, [startPosition, targetPosition]);
 
-  // Setup collision groups
-  const collisionGroups = useMemo(() => {
-    return RigidBodyCollisionSystem.setupRigidBodyCollisionGroups(
-      CollisionBitmask.AOE,
-      excludeCollisionGroup
-    );
-  }, [excludeCollisionGroup]);
-
   /**
    * Deactivate meteor visual effects
    */
@@ -172,7 +163,7 @@ export const Meteor: React.FC<MeteorProps> = ({
    * Handle collision when something enters the sphere collider area
    */
   const handleSphereCollision = useCallback(
-    (other) => {
+    (other: IntersectionEnterPayload) => {
       if (!other || !other.colliderObject) return;
 
       // Use target position as approximation for collision point
