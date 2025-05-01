@@ -42,7 +42,7 @@ export function useKeyboardProjectileTrigger(options: {
       rotation.w
     );
 
-    const direction = new Vector3(0, 0, -1);
+    const direction = new Vector3(0, 0, 1);
     direction.applyQuaternion(quaternion);
 
     // 계산된 방향 캐싱
