@@ -1,7 +1,7 @@
 import React, { useRef, useCallback } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Vector3 } from "three";
-import { useKeyboardProjectileTrigger } from "./keyboardProjectileTrigger";
+import { useProjectileKeyboardInput } from "./projectileKeyboardInput";
 import { useEffectStore } from "../store/effectStore";
 import { EffectType } from "../../types/effect";
 import { createBulletEffectConfig } from "../effects/BulletEffectController";
@@ -38,7 +38,7 @@ export const BoxShooter: React.FC<BoxShooterProps> = ({
   const isCoolingDown = useRef(false);
 
   // useKeyboardProjectileTrigger의 내부 구현을 확인해 MutableRefObject 예외 처리
-  const { subscribeTrigger } = useKeyboardProjectileTrigger({
+  const { subscribeTrigger } = useProjectileKeyboardInput({
     fireAction,
     // @ts-expect-error - CustomEcctrlRigidBody와 RigidBody 간의 타입 호환성 문제
     playerRigidBodyRef: controllerRef?.current?.rigidBodyRef,

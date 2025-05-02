@@ -7,7 +7,7 @@ import { RigidBody } from "@dimforge/rapier3d-compat";
  * 투사체 발사를 위한 키보드 입력 처리 시스템
  * 발사 트리거와 방향 결정을 위한 특화된 훅
  */
-export function useKeyboardProjectileTrigger(options: {
+export function useProjectileKeyboardInput(options: {
   /** 발사 트리거로 사용할 키 액션 */
   fireAction?: string;
   /** 플레이어 RigidBody 참조 (방향 계산에 사용) */

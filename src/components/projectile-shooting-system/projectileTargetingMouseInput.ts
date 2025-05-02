@@ -7,7 +7,7 @@ import { RigidBody } from "@dimforge/rapier3d-compat";
  * 투사체 발사를 위한 마우스 입력 처리 시스템
  * 마우스 위치를 기반으로 발사 방향 결정 및 트리거 감지 기능 제공
  */
-export function useMouseProjectileTrigger(options: {
+export function useProjectileTargetingMouseInput(options: {
   /** 발사 트리거로 사용할 마우스 버튼 (0: 좌클릭, 1: 휠클릭, 2: 우클릭) */
   mouseButton?: number;
   /** 플레이어 RigidBody 참조 (시작 위치 계산에 사용) - 필수 */

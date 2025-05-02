@@ -9,8 +9,8 @@ import { RandomBoxes } from "./RandomBoxes";
 import { ControllerHandle, FreeViewController } from "vibe-starter-3d";
 import { useEffectStore } from "../store/effectStore";
 import { EffectContainer } from "../EffectContainer";
-import { BoxShooter } from "../projectile-shooting-system/BoxShooter";
 import { TargetShooter } from "../projectile-shooting-system/TargetShooter";
+import { KeyboardCircularShooter } from "../projectile-shooting-system/KeyboardCircularShooter";
 
 type Primitive = string | number | boolean | null | undefined | symbol | bigint;
 type PrimitiveOrArray = Primitive | Primitive[];
@@ -309,7 +309,7 @@ export function Experience() {
           </FreeViewController>
 
           {/* Add BoxShooter for firing box projectiles */}
-          <BoxShooter
+          {/* <BoxShooter
             controllerRef={controllerRef}
             fireAction="action1"
             cooldown={500}
@@ -317,6 +317,17 @@ export function Experience() {
             speed={30}
             duration={3000}
             scale={1.5}
+          /> */}
+
+          <KeyboardCircularShooter
+            controllerRef={controllerRef}
+            fireAction="action1"
+            projectileSize={1}
+            projectileSpeed={15}
+            projectileColor="#FF5500"
+            projectileLifetime={2}
+            maxProjectiles={20}
+            cooldown={300}
           />
           {/* 
           <MouseShooter
