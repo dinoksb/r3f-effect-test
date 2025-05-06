@@ -24,7 +24,7 @@ import {
 import { CollisionBitmask } from "../../constants/collisionGroups";
 import { RigidBodyCollisionSystem } from "../../utils/rigidbodyCollisionSystem";
 import { EffectType } from "../../types/effect";
-import { createFireBallEffectConfig } from "../effects/FireBallEffectController";
+import { createFireBallEffectConfig } from "../effects/FireBall";
 import { createLightningEffectConfig } from "../effects/LightningEffectController";
 import { createMeteorEffectConfig } from "../effects/MeteorEffectController";
 import { createExplosionWithImpactConfig } from "../effects/ShockwaveExplosion";
@@ -375,7 +375,12 @@ export const Player = forwardRef<PlayerRef, PlayerProps>(
               EffectType.FIREBALL,
               createFireBallEffectConfig({
                 startPosition,
-                direction,
+                endPosition: new THREE.Vector3(
+                  startPosition.x + direction.x * 10,
+                  startPosition.y + direction.y * 10,
+                  startPosition.z + direction.z * 10
+                ),
+                speed: 10,
               })
             );
             break;

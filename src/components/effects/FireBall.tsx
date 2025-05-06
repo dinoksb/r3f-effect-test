@@ -8,40 +8,117 @@ import {
   RigidBody,
 } from "@dimforge/rapier3d-compat";
 
-interface FireBallProps {
+type Primitive = string | number | boolean | null | undefined | symbol | bigint;
+type PrimitiveOrArray = Primitive | Primitive[];
+
+const DEFAULT_SPEED = 20;
+
+// FireBall component props
+export interface FireBallProps {
   startPosition: THREE.Vector3;
-  direction: THREE.Vector3; // Normalized direction vector
+  endPosition: THREE.Vector3;
   speed: number; // Distance traveled per second
-  duration: number; // Lifespan (milliseconds)
   color?: THREE.ColorRepresentation;
   scale?: number;
   collisionGroups?: InteractionGroups;
-  owner?: unknown; // Use a more type-safe unknown instead of any
+  owner?: RigidBody;
   onHit?: (
     pos?: THREE.Vector3,
     rigidBody?: RigidBody,
     collider?: Collider
-  ) => void; // Callback on collision
+  ) => void;
   onComplete?: () => void;
 }
 
-export const FireBall: React.FC<FireBallProps> = ({
-  startPosition,
-  direction,
-  speed,
-  duration,
-  color = "#ff3300",
-  scale = 1,
-  collisionGroups,
-  owner,
-  onHit,
-  onComplete,
-}) => {
+// Props for FireBall that accepts raw config object
+export interface FireBallWithRawConfigProps {
+  config: { [key: string]: PrimitiveOrArray };
+  collisionGroups?: InteractionGroups;
+  owner?: RigidBody;
+  onHit?: (
+    pos?: THREE.Vector3,
+    rigidBody?: RigidBody,
+    collider?: Collider
+  ) => void;
+  onComplete?: () => void;
+}
+
+/**
+ * Helper function for creating fireball config objects
+ * Creates a serializable config object from Vector3 objects
+ */
+export const createFireBallEffectConfig = (config: {
+  startPosition: THREE.Vector3;
+  endPosition: THREE.Vector3;
+  speed?: number;
+  color?: string;
+  scale?: number;
+}): { [key: string]: PrimitiveOrArray } => {
+  return {
+    startPosition: config.startPosition.toArray(),
+    endPosition: config.endPosition.toArray(),
+    speed: config.speed || DEFAULT_SPEED,
+    color: config.color,
+    scale: config.scale || 1,
+  };
+};
+
+/**
+ * Function to parse the raw config into usable values
+ * Converts serialized arrays back to Vector3 objects
+ */
+export const parseConfig = (config: {
+  [key: string]: PrimitiveOrArray;
+}): FireBallProps => {
+  return {
+    startPosition: new THREE.Vector3(...(config.startPosition as number[])),
+    endPosition: new THREE.Vector3(...(config.endPosition as number[])),
+    speed: (config.speed as number) || DEFAULT_SPEED,
+    color: config.color as string | undefined,
+    scale: (config.scale as number) || 1,
+  };
+};
+
+// FireBall component that accepts either parsed props or a raw config object
+export const FireBall: React.FC<FireBallProps | FireBallWithRawConfigProps> = (
+  props
+) => {
+  // Check if we're receiving a raw config or parsed props
+  const hasRawConfig = "config" in props;
+
+  // Parse props accordingly
+  const {
+    startPosition,
+    endPosition,
+    speed,
+    color = "#ff3300",
+    scale = 1,
+    collisionGroups,
+    owner,
+    onHit,
+    onComplete,
+  } = hasRawConfig
+    ? {
+        ...parseConfig((props as FireBallWithRawConfigProps).config),
+        collisionGroups: (props as FireBallWithRawConfigProps).collisionGroups,
+        owner: (props as FireBallWithRawConfigProps).owner,
+        onHit: (props as FireBallWithRawConfigProps).onHit,
+        onComplete: (props as FireBallWithRawConfigProps).onComplete,
+      }
+    : (props as FireBallProps);
+
   const [active, setActive] = useState(true);
 
   // FireBall's "creation time"
   const startTime = useRef(Date.now());
   const onCompleteRef = useRef(onComplete);
+  const traveledDistance = useRef(0);
+
+  // Calculate the total distance and direction vector once
+  const totalDistance = useRef(startPosition.distanceTo(endPosition));
+  const directionVector = useRef(
+    endPosition.clone().sub(startPosition).normalize()
+  );
 
   // Group reference for positioning
   const groupRef = useRef<THREE.Group>(null);
@@ -53,9 +130,6 @@ export const FireBall: React.FC<FireBallProps> = ({
 
   // Access Rapier physics world
   const { rapier, world } = useRapier();
-
-  // Normalize direction vector
-  const normalizedDirection = direction.clone().normalize();
 
   // FireBall removal function
   const removeBall = useCallback(() => {
@@ -70,8 +144,9 @@ export const FireBall: React.FC<FireBallProps> = ({
   }, [onComplete]);
 
   useEffect(() => {
-    // Reset the timer when the component mounts
+    // Reset the timer and traveled distance when the component mounts
     startTime.current = Date.now();
+    traveledDistance.current = 0;
     setActive(true);
   }, []);
 
@@ -79,27 +154,31 @@ export const FireBall: React.FC<FireBallProps> = ({
   useFrame((_, delta) => {
     if (!active) return;
 
-    const elapsed = Date.now() - startTime.current;
-    // Destroy when lifetime ends
-    if (elapsed > duration) {
-      removeBall();
-      return;
-    }
-
     const group = groupRef.current;
     if (!group) return;
 
     // Calculate distance to travel in this frame
     const frameTravelDistance = speed * delta;
+
+    // Add to total traveled distance
+    traveledDistance.current += frameTravelDistance;
+
+    // Check if we've reached the destination
+    if (traveledDistance.current >= totalDistance.current) {
+      group.position.copy(endPosition);
+      removeBall();
+      return;
+    }
+
     // Use current position as the origin for the ray
     const origin = group.position;
-
-    console.log("owner: ", owner);
+    const normalizedDirection = directionVector.current;
 
     // Use Rapier's ray casting for collision detection
     const ray = new rapier.Ray(origin, normalizedDirection);
 
-    const hit = (world as any).castRay(
+    // Cast ray to detect collisions
+    const hit = world.castRay(
       ray,
       frameTravelDistance,
       true,
@@ -110,7 +189,7 @@ export const FireBall: React.FC<FireBallProps> = ({
     );
 
     if (hit) {
-      // Calculate hit point
+      // Calculate hit point (timeOfImpact is the property name in the current version)
       const hitPoint = ray.pointAt(hit.timeOfImpact);
       const hitPointVec3 = new THREE.Vector3(
         hitPoint.x,
@@ -124,7 +203,14 @@ export const FireBall: React.FC<FireBallProps> = ({
       group.position.copy(hitPointVec3);
 
       // Call onHit callback with collision data
-      onHit?.(hitPointVec3, hitRigidBody, hitCollider);
+      if (onHit) {
+        // Use type assertion to handle potential type mismatches
+        onHit(
+          hitPointVec3,
+          hitRigidBody as unknown as RigidBody,
+          hitCollider as unknown as Collider
+        );
+      }
       removeBall();
       return;
     } else {
@@ -135,13 +221,17 @@ export const FireBall: React.FC<FireBallProps> = ({
       group.position.copy(nextPosition);
     }
 
-    // Calculate fade out
-    const fadeStart = duration - 400;
-    const fadeElapsed = Math.max(elapsed - fadeStart, 0);
-    const fadeProgress = THREE.MathUtils.clamp(fadeElapsed / 400, 0, 1);
+    // Calculate fade out based on distance traveled
+    const progressRatio = traveledDistance.current / totalDistance.current;
+    const fadeStart = 0.7; // Start fading at 70% of the journey
+    const fadeProgress = Math.max(
+      0,
+      (progressRatio - fadeStart) / (1 - fadeStart)
+    );
     const opacityFactor = 1 - fadeProgress;
 
-    // Flicker + Scale
+    // Flicker + Scale effects
+    const elapsed = Date.now() - startTime.current;
     const flickerScale =
       0.9 + Math.sin(elapsed * 0.02) * 0.1 + Math.random() * 0.05;
     if (outerRef.current) {

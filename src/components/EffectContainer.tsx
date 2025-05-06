@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from "react";
 import { Vector3 } from "three";
-import { FireBallEffectController } from "./effects/FireBallEffectController";
+import { FireBall } from "./effects/FireBall";
 import { ActiveEffect, EffectType } from "../types/effect";
 import {
   useEffectStore,
@@ -128,7 +128,7 @@ export function EffectContainer() {
       switch (type) {
         case EffectType.FIREBALL:
           return (
-            <FireBallEffectController
+            <FireBall
               key={effect.key}
               config={effect.effectData.config}
               owner={getPlayerRef("player")?.current}

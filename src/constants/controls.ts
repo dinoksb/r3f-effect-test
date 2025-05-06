@@ -13,4 +13,5 @@ export const keyboardMap: KeyboardControlsEntry[] = [
   { name: "action4", keys: ["4"] },
   { name: "magic", keys: ["KeyE"] },
   { name: "circleBullet", keys: ["KeyF"] },
+  { name: "zAttack", keys: ["KeyZ"] },
 ];
